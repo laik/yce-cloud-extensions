@@ -1,0 +1,10 @@
+kind: Ci
+apiVersion: yamecloud.io/v1
+metadata:
+  name: sample-ci
+  namespace: test
+spec:
+  gitUrl: "https://github.com/yametech/compass.git"
+  commitId: "wg"
+  retryCount: 1024
+  output: "http://harbor.ym/devops/wg:v0.0.1"
