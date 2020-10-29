@@ -1,4 +1,4 @@
-kind: CI
+kind: CD
 apiVersion: yamecloud.io/v1
 metadata:
   name: sample-ci
