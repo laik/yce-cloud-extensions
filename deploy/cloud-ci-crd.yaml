@@ -24,19 +24,19 @@ spec:
                 output:
                   type: string
       additionalPrinterColumns:
-        - name: VlanID
+        - name: GitUrl
           type: string
-          jsonPath: .spec.vlanId
-        - name: ProviderInterfaceName
+          jsonPath: .spec.gitUrl
+        - name: CommitId
           type: string
-          jsonPath: .spec.providerInterfaceName
-        - name: Subnet
+          jsonPath: .spec.commitId
+        - name: RetryCount
           type: string
-          jsonPath: .spec.subnet
-  scope: Cluster
+          jsonPath: .spec.retryCount
+  scope: Namespace
   names:
-    plural: vlans
-    singular: vlan
-    kind: Vlan
+    plural: cis
+    singular: ci
+    kind: Ci
     shortNames:
-      - vlan
+      - ci
