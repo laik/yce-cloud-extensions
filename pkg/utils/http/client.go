@@ -9,3 +9,5 @@ type IClient interface {
 func NewIClient() IClient {
 	return nil
 }
+
+type client struct{}
