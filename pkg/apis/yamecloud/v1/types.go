@@ -14,10 +14,11 @@ type CI struct {
 }
 
 type CISpec struct {
-	GitURL     string `json:"git_url"`
-	CommitID   string `json:"commit_id"`
-	RetryCount uint32 `json:"retry_count"`
-	Output     string `json:"output"`
+	GitURL     *string `json:"git_url"`
+	CommitID   *string `json:"commit_id"`
+	RetryCount *uint32 `json:"retry_count"`
+	Output     *string `json:"output"`
+	Done       bool    `json:"done"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
