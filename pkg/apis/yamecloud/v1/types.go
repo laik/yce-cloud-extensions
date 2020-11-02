@@ -25,7 +25,8 @@ type CISpec struct {
 type CIList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []CI `json:"items"`
+
+	Items []CI `json:"items"`
 }
 
 // +genclient
@@ -49,5 +50,6 @@ type CDSpec struct {
 type CDList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []CD `json:"items"`
+
+	Items []CD `json:"items"`
 }
