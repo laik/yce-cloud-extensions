@@ -10,31 +10,32 @@ import (
 	fe "github.com/laik/yce-cloud-extensions/pkg/utils/file"
 )
 
-func needInit() error {
+func needInit() (*configure.InstallConfigure, error) {
 	var k8sJSONData []byte
 	if common.InCluster {
 		configure.SetTheAppRuntimeMode(configure.InCluster)
 	} else {
 		d, err := fe.NewIConvert(common.DefaultConfigFile).Convert()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		k8sJSONData = d
 	}
-	_, err := configure.NewInstallConfigure(k8s.NewResources(nil), k8sJSONData)
+	cfg, err := configure.NewInstallConfigure(k8s.NewResources(nil), k8sJSONData)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return cfg, nil
 }
 
 func main() {
 	flag.Parse()
-	if err := needInit(); err != nil {
+	cfg, err := needInit()
+	if err != nil {
 		panic(err)
 	}
 
-	srv := ctl.NewCIController()
+	srv := ctl.NewCIController(cfg)
 	stop := make(chan struct{})
 	if err := srv.Run(":8080", stop); err != nil {
 		panic(err)

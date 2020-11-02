@@ -9,6 +9,8 @@ var (
 	InCluster bool
 	// DefaultConfigFile is the default bootstrap configuration
 	DefaultConfigFile = "config.cfg"
+	// YceCloudExtensions yce-cloud-extensions default namespace
+	YceCloudExtensions = "yce-cloud-extensions"
 )
 
 func init() {

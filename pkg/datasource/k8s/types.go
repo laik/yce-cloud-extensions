@@ -1,12 +1,14 @@
 package k8s
 
 import (
+	"fmt"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 )
 
 type ResourceLister interface {
 	Ranges(d dynamicinformer.DynamicSharedInformerFactory, stop <-chan struct{})
+	GetGvr(string) (schema.GroupVersionResource, error)
 }
 
 const (
@@ -20,9 +22,6 @@ const (
 	Task             = "tasks"
 	TaskRun          = "taskruns"
 	PipelineResource = "pipelineresources"
-	TektonGraph      = "tektongraphs"
-	TektonWebHook    = "tektonwebhooks"
-	TektonStore      = "tektonstores"
 )
 
 type Resources struct {
@@ -59,6 +58,14 @@ func (m *Resources) Ranges(d dynamicinformer.DynamicSharedInformerFactory, stop 
 		value := v
 		go d.ForResource(value).Informer().Run(stop)
 	}
+}
+
+func (m *Resources) GetGvr(s string) (schema.GroupVersionResource, error) {
+	item, exist := m.Data[s]
+	if !exist {
+		return schema.GroupVersionResource{}, fmt.Errorf("resource (%s) not exist", s)
+	}
+	return item, nil
 }
 
 func rsInit(rs *Resources) {

@@ -32,6 +32,8 @@ type InstallConfigure struct {
 	*k8s.CacheInformerFactory
 	// k8s client
 	*kubernetes.Clientset
+	// ResourceLister resource lister
+	k8s.ResourceLister
 }
 
 func NewInstallConfigure(k8sResLister k8s.ResourceLister, k8sjsondata []byte) (*InstallConfigure, error) {
@@ -68,5 +70,6 @@ func NewInstallConfigure(k8sResLister k8s.ResourceLister, k8sjsondata []byte) (*
 		CacheInformerFactory: cacheInformerFactory,
 		Clientset:            clientSet,
 		RestConfig:           resetConfig,
+		ResourceLister:       k8sResLister,
 	}, nil
 }
