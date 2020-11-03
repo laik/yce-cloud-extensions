@@ -14,11 +14,17 @@ type CI struct {
 }
 
 type CISpec struct {
-	GitURL     *string `json:"git_url"`
-	CommitID   *string `json:"commit_id"`
-	RetryCount *uint32 `json:"retry_count"`
+	GitURL     *string `json:"gitUrl"`
+	Branch     *string `json:"branch"`
+	CommitID   *string `json:"commitId"`
+	RetryCount *uint32 `json:"retryCount"`
 	Output     *string `json:"output"`
 	Done       bool    `json:"done"`
+	// fsm request field
+	FlowId    *string  `json:"flowId"`
+	StepName  *string  `json:"stepName"`
+	AckStates []string `json:"ackStates"`
+	UUID      *string  `json:"uuid"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

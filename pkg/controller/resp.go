@@ -11,6 +11,11 @@ type message struct {
 }
 
 func requestErr(g *gin.Context, err error) {
-	g.JSON(http.StatusOK, &message{Data: err.Error(), Msg: "request not match"})
+	g.JSON(http.StatusBadRequest, &message{Data: err.Error(), Msg: "request not match"})
+	g.Abort()
+}
+
+func internalApplyErr(g *gin.Context, err error) {
+	g.JSON(http.StatusInternalServerError, &message{Data: err.Error(), Msg: "apply the resource error"})
 	g.Abort()
 }

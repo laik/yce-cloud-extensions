@@ -175,6 +175,11 @@ func (in *CISpec) DeepCopyInto(out *CISpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Branch != nil {
+		in, out := &in.Branch, &out.Branch
+		*out = new(string)
+		**out = **in
+	}
 	if in.CommitID != nil {
 		in, out := &in.CommitID, &out.CommitID
 		*out = new(string)
@@ -187,6 +192,26 @@ func (in *CISpec) DeepCopyInto(out *CISpec) {
 	}
 	if in.Output != nil {
 		in, out := &in.Output, &out.Output
+		*out = new(string)
+		**out = **in
+	}
+	if in.FlowId != nil {
+		in, out := &in.FlowId, &out.FlowId
+		*out = new(string)
+		**out = **in
+	}
+	if in.StepName != nil {
+		in, out := &in.StepName, &out.StepName
+		*out = new(string)
+		**out = **in
+	}
+	if in.AckStates != nil {
+		in, out := &in.AckStates, &out.AckStates
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.UUID != nil {
+		in, out := &in.UUID, &out.UUID
 		*out = new(string)
 		**out = **in
 	}

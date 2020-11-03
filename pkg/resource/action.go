@@ -6,13 +6,15 @@ type Request struct {
 	AckStates []string `json:"ackStates"` //(SUCCESS | FAIL);
 	UUID      string   `json:"uuid"`
 	// GitUrl git url address
-	GitUrl string `json:"giturl"`
+	GitUrl string `json:"gitUrl"`
+	// Branch git Branch
+	Branch string `json:"branch"`
 	// CommitID the git commit id
-	CommitID string `json:"commitid"`
+	CommitID string `json:"commitId"`
 	// Type language type
 	Type string `json:"type"`
 	// RetryCount none
-	RetryCount uint64 `json:"retry_count"`
+	RetryCount uint32 `json:"retryCount"`
 	// Output output image repository
 	Output string `json:"output"`
 }

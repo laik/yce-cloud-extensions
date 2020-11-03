@@ -2,11 +2,11 @@ package configure
 
 import (
 	"fmt"
+	"github.com/laik/yce-cloud-extensions/pkg/common"
+	client "k8s.io/client-go/dynamic"
 
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	clientcmdapiv1 "k8s.io/client-go/tools/clientcmd/api/v1"
 )
 
 type RuntimeMode string
@@ -31,29 +31,23 @@ type InstallConfigure struct {
 	// k8s CacheInformerFactory
 	*k8s.CacheInformerFactory
 	// k8s client
-	*kubernetes.Clientset
+	client.Interface
 	// ResourceLister resource lister
 	k8s.ResourceLister
 }
 
-func NewInstallConfigure(k8sResLister k8s.ResourceLister, k8sjsondata []byte) (*InstallConfigure, error) {
+func NewInstallConfigure(k8sResLister k8s.ResourceLister) (*InstallConfigure, error) {
 	var (
-		clientSet      *kubernetes.Clientset
-		resetConfig    *rest.Config
-		clientv1Config *clientcmdapiv1.Config
-		err            error
+		cli         client.Interface
+		resetConfig *rest.Config
+		err         error
 	)
 
 	switch AppRuntimeMode {
 	case Default:
-		k8sConfig, err := k8s.CreateConfigFromJSON(k8sjsondata)
-		if err != nil {
-			return nil, err
-		}
-		clientv1Config = &k8sConfig.Config
-		clientSet, resetConfig, err = k8s.BuildClientSet("", k8sConfig.Config)
+		cli, resetConfig, err = k8s.BuildClientSet(*common.KubeConfig)
 	case InCluster:
-		clientSet, resetConfig, err = k8s.CreateInClusterConfig()
+		_, resetConfig, err = k8s.CreateInClusterConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -61,14 +55,14 @@ func NewInstallConfigure(k8sResLister k8s.ResourceLister, k8sjsondata []byte) (*
 		return nil, fmt.Errorf("not define the runtime mode")
 	}
 
-	cacheInformerFactory, err := k8s.NewCacheInformerFactory(k8sResLister, resetConfig, clientv1Config)
+	cacheInformerFactory, err := k8s.NewCacheInformerFactory(k8sResLister, resetConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &InstallConfigure{
 		CacheInformerFactory: cacheInformerFactory,
-		Clientset:            clientSet,
+		Interface:            cli,
 		RestConfig:           resetConfig,
 		ResourceLister:       k8sResLister,
 	}, nil

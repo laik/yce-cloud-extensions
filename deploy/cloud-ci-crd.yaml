@@ -17,16 +17,31 @@ spec:
               properties:
                 gitUrl:
                   type: string
+                branch:
+                  type: string
                 commitId:
                   type: string
                 retryCount:
                   type: integer
                 output:
                   type: string
+                flowId:
+                  type: string
+                stepName:
+                  type: string
+                ackStates:
+                  type: array
+                  items:
+                    type: string
+                uuid:
+                  type: string
       additionalPrinterColumns:
         - name: GitUrl
           type: string
           jsonPath: .spec.gitUrl
+        - name: Branch
+          type: string
+          jsonPath: .spec.branch
         - name: CommitId
           type: string
           jsonPath: .spec.commitId
@@ -36,6 +51,18 @@ spec:
         - name: Output
           type: string
           jsonPath: .spec.output
+        - name: FlowId
+          type: string
+          jsonPath: .spec.flowId
+        - name: StepName
+          type: string
+          jsonPath: .spec.stepName
+        - name: AckStates
+          type: string
+          jsonPath: .spec.ackStates
+        - name: UUID
+          type: string
+          jsonPath: .spec.uuid
   scope: Namespaced
   names:
     plural: cis
