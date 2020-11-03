@@ -35,6 +35,8 @@ spec:
                     type: string
                 uuid:
                   type: string
+                done:
+                  type: boolean
       additionalPrinterColumns:
         - name: GitUrl
           type: string
@@ -63,6 +65,9 @@ spec:
         - name: UUID
           type: string
           jsonPath: .spec.uuid
+        - name: Done
+          type: boolean
+          jsonPath: .spec.done
   scope: Namespaced
   names:
     plural: cis

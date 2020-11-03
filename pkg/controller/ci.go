@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
-	"strings"
 )
 
 type CIController struct {
@@ -36,7 +35,14 @@ func (s *CIController) Handle(addr string) {
 	}
 }
 
-func (s *CIController) recv() error {
+func (s *CIController) handle(ci *v1.CI) error {
+	if ci.Spec.Done {
+		return nil
+	}
+	return nil
+}
+
+func (s *CIController) recv(stop <-chan struct{}) error {
 	gvr, err := s.GetGvr(k8s.CI)
 	if err != nil {
 		return err
@@ -48,9 +54,48 @@ func (s *CIController) recv() error {
 		return err
 	}
 
-	_ = list
+	for _, item := range list.Items {
+		value := item
+		ci := &v1.CI{}
+		if err := UnstructuredObjectToInstanceObj(&value, ci); err != nil {
+			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
+			continue
+		}
+		if err := s.handle(ci); err != nil {
+			fmt.Printf("handle ci error (%s)", err)
+			continue
+		}
+	}
+	ciList := &v1.CIList{}
+	if err := UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
+		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
+	}
 
-	return nil
+	eventChan, err := s.Watch(common.YceCloudExtensions, k8s.CI, ciList.GetResourceVersion(), 0, nil)
+	if err != nil {
+		return fmt.Errorf("watch error (%s)", err)
+	}
+
+	for {
+		select {
+		case <-stop:
+			return nil
+		case item, ok := <-eventChan:
+			if !ok {
+				return nil
+			}
+			ci := &v1.CI{}
+			err := RuntimeObjectToInstance(item.Object, ci)
+			if err != nil {
+				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
+				continue
+			}
+			if err := s.handle(ci); err != nil {
+				fmt.Printf("ci controller handle error (%s) (%v)", err, item.Object)
+				continue
+			}
+		}
+	}
 }
 
 func (s *CIController) Run(addr string, stop <-chan struct{}) error {
@@ -97,6 +142,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 				StepName:   &request.StepName,
 				AckStates:  request.AckStates,
 				UUID:       &request.UUID,
+				Done:       false,
 			},
 		}
 		// 转换成unstructured 类型
@@ -115,9 +161,9 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 		g.JSON(http.StatusOK, obj)
 	})
 
-	go s.recv()
+	go route.Run(addr)
 
-	return route.Run(addr)
+	return s.recv(stop)
 }
 
 func NewCIController(cfg *configure.InstallConfigure) Interface {
@@ -125,16 +171,4 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 		InstallConfigure: cfg,
 		IDataSource:      datasource.NewIDataSource(cfg),
 	}
-}
-
-func extractProject(git string) (string, error) {
-	if !strings.HasSuffix(git, ".git") {
-		return "", fmt.Errorf("git addr illegal (%s)", git)
-	}
-
-	_slice := strings.Split(strings.TrimSuffix(git, ".git"), "/")
-	if len(_slice) < 1 {
-		return "", fmt.Errorf("git addr illegal (%s)", git)
-	}
-	return _slice[len(_slice)-1], nil
 }
