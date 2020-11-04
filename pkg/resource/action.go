@@ -17,6 +17,21 @@ type Request struct {
 	RetryCount uint32 `json:"retryCount"`
 	// Output output image repository
 	Output string `json:"output"`
+	///////
+
+}
+
+type RequestCd struct {
+	FlowId     string   `json:"flowId"`
+	StepName   string   `json:"stepName"`
+	AckStates  []string `json:"ackStates"` //(SUCCESS | FAIL);
+	UUID       string   `json:"uuid"`
+	RetryCount uint32   `json:"retryCount"`
+
+	ServiceName     string            `json:"serviceName"`
+	DeployNamespace string            `json:"deployNamespace"`
+	ArtifactInfo    map[string]string `json:"artifactInfo"`
+	DeployType      string            `json:"DeployType"`
 }
 
 type Response struct {
