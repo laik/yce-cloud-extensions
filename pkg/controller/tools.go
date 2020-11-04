@@ -54,3 +54,21 @@ func extractProject(git string) (string, error) {
 	}
 	return _slice[len(_slice)-1], nil
 }
+
+// harbor.ym/devops/devops-taiyi-ui-k8s@sha256:fba94e0ce9ea241fa1047ea7f84b616093ff6a5d30d193bee2b3431f9e88d33c
+func extractService(ServiceName string) (string, error) {
+	if !strings.Contains(ServiceName, "sha256") {
+		return "", fmt.Errorf("ServiceName addr illegal (%s)", ServiceName)
+	}
+
+	_slice_url := strings.Split(ServiceName, "@sha256")
+	if len(_slice_url) < 1 {
+		return "", fmt.Errorf("ServiceName addr illegal (%s)", ServiceName)
+	}
+	url := _slice_url[0]
+	_slice := strings.Split(url, "/")
+	if len(_slice) < 1 {
+		return "", fmt.Errorf("url addr illegal (%s)", url)
+	}
+	return _slice[len(_slice)-1], nil
+}

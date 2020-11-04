@@ -15,27 +15,57 @@ spec:
             spec:
               type: object
               properties:
-                gitUrl:
+                ServiceName:
                   type: string
-                commitId:
+                DeployNamespace:
                   type: string
+                ArtifactInfo:
+                  type: object
                 retryCount:
                   type: integer
-                output:
+                DeployType:
                   type: string
+                flowId:
+                  type: string
+                stepName:
+                  type: string
+                ackStates:
+                  type: array
+                  items:
+                    type: string
+                uuid:
+                  type: string
+                done:
+                  type: boolean
+
       additionalPrinterColumns:
-        - name: GitUrl
+        - name: ServiceName
           type: string
-          jsonPath: .spec.gitUrl
-        - name: CommitId
+          jsonPath: .spec.serviceName
+        - name: DeployNamespace
           type: string
-          jsonPath: .spec.commitId
+          jsonPath: .spec.deployNamespace
         - name: RetryCount
           type: string
           jsonPath: .spec.retryCount
-        - name: Output
+        - name: DeployType
           type: string
-          jsonPath: .spec.output
+          jsonPath: .spec.deployType
+        - name: FlowId
+          type: string
+          jsonPath: .spec.flowId
+        - name: StepName
+          type: string
+          jsonPath: .spec.stepName
+        - name: AckStates
+          type: string
+          jsonPath: .spec.ackStates
+        - name: UUID
+          type: string
+          jsonPath: .spec.uuid
+        - name: Done
+          type: boolean
+          jsonPath: .spec.done
   scope: Namespaced
   names:
     plural: cds
