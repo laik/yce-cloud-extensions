@@ -15,15 +15,15 @@ spec:
             spec:
               type: object
               properties:
-                ServiceName:
+                serviceName:
                   type: string
-                DeployNamespace:
+                deployNamespace:
                   type: string
-                ArtifactInfo:
+                artifactInfo:
                   type: object
                 retryCount:
                   type: integer
-                DeployType:
+                deployType:
                   type: string
                 flowId:
                   type: string

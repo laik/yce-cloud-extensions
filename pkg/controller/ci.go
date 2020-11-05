@@ -10,6 +10,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/datasource"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
+	"github.com/laik/yce-cloud-extensions/pkg/services"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,6 +22,7 @@ type CIController struct {
 	datasource.IDataSource
 	client.IClient
 	dataChannel chan *unstructured.Unstructured
+	services.IService
 }
 
 func (s *CIController) Handle(addr string) {
@@ -161,7 +163,9 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 		g.JSON(http.StatusOK, obj)
 	})
 
+	go s.Start(stop)
 	go route.Run(addr)
+
 
 	return s.recv(stop)
 }
