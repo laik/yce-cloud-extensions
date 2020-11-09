@@ -10,6 +10,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/datasource"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
+	"github.com/laik/yce-cloud-extensions/pkg/services"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,6 +22,7 @@ type CDController struct {
 	datasource.IDataSource
 	client.IClient
 	dataChannel chan *unstructured.Unstructured
+	services.IService
 }
 
 func (s *CDController) Handle(addr string) {
@@ -127,6 +129,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			Spec: v1.CDSpec{
 				ServiceName:     &request.ServiceName,
 				DeployNamespace: &request.DeployNamespace,
+				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    request.ArtifactInfo,
 				DeployType:      &request.DeployType,
 
@@ -154,6 +157,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 
 		g.JSON(http.StatusOK, obj)
 	})
+	go s.Start(stop)
 
 	go route.Run(addr)
 

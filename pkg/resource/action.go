@@ -26,17 +26,31 @@ type RequestCd struct {
 	StepName   string   `json:"stepName"`
 	AckStates  []string `json:"ackStates"` //(SUCCESS | FAIL);
 	UUID       string   `json:"uuid"`
-	RetryCount uint32   `json:"retryCount"`
+    RetryCount uint32   `json:"retryCount"`
 
-	ServiceName     string            `json:"serviceName"`
-	DeployNamespace string            `json:"deployNamespace"`
-	ArtifactInfo    map[string]string `json:"artifactInfo"`
-	DeployType      string            `json:"DeployType"`
+    ServiceName     string       `json:"serviceName"`
+    ServiceImage    string       `json:"serviceImage"`
+    DeployNamespace string       `json:"deployNamespace"`
+    ArtifactInfo    ArtifactInfo `json:"artifactInfo"`
+    DeployType      string       `json:"DeployType"`
+}
+
+type ArtifactInfo struct {
+    Command      string         `json:"command"`
+    Arguments    string         `json:"arguments"`
+    ServicePorts []ServicePorts `json:"service_ports"`
+}
+
+type ServicePorts struct {
+    Name       string `json:"name"`
+    Protocol   string `json:"protocol"`
+    Port       int32 `json:"port"`
+    TargetPort string `json:"targetPort"`
 }
 
 type Response struct {
-	FlowId   string `json:"flowId"`
-	StepName string `json:"stepName"`
+    FlowId   string `json:"flowId"`
+    StepName string `json:"stepName"`
 	AckState string `json:"ackState"`
 	UUID     string `json:"uuid"`
 	Done     bool   `json:"done"`
