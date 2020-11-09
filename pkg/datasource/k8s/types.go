@@ -22,6 +22,9 @@ const (
 	Task             = "tasks"
 	TaskRun          = "taskruns"
 	PipelineResource = "pipelineresources"
+
+	// Extend Tekton Pipeline & PipelineRun resource Graph
+	TektonGraph = "tektongraphs"
 )
 
 type Resources struct {
@@ -78,4 +81,7 @@ func rsInit(rs *Resources) {
 	rs.register(Task, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "tasks"})
 	rs.register(TaskRun, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "taskruns"})
 	rs.register(PipelineResource, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "pipelineresources"})
+
+	// tekton graph
+	rs.register(TektonGraph, schema.GroupVersionResource{Group: "fuxi.nip.io", Version: "v1", Resource: "tektongraphs"})
 }

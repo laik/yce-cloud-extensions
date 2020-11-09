@@ -11,6 +11,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
+	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
@@ -49,7 +50,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 	for _, item := range list.Items {
 		value := item
 		cd := &v1.CD{}
-		if err := UnstructuredObjectToInstanceObj(&value, cd); err != nil {
+		if err := tools.UnstructuredObjectToInstanceObj(&value, cd); err != nil {
 			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
 			continue
 		}
@@ -59,7 +60,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 		}
 	}
 	cdList := &v1.CDList{}
-	if err := UnstructuredListObjectToInstanceObjectList(list, cdList); err != nil {
+	if err := tools.UnstructuredListObjectToInstanceObjectList(list, cdList); err != nil {
 		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
 	}
 
@@ -77,7 +78,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 				return nil
 			}
 			cd := &v1.CD{}
-			err := RuntimeObjectToInstance(item.Object, cd)
+			err := tools.RuntimeObjectToInstance(item.Object, cd)
 			if err != nil {
 				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
 				continue
@@ -111,7 +112,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 		}
 
 		// {git_project_name}-{Branch}
-		project, err := extractService(request.ServiceName)
+		project, err := tools.ExtractService(request.ServiceName)
 		var name = fmt.Sprintf("%s-%s", project, request.DeployType)
 
 		// 构造一个CI的结构
@@ -140,7 +141,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			},
 		}
 		// 转换成unstructured 类型
-		unstructured, err := InstanceToUnstructured(cd)
+		unstructured, err := tools.InstanceToUnstructured(cd)
 		if err != nil {
 			requestErr(g, err)
 			return

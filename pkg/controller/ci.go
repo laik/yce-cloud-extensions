@@ -12,6 +12,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
+	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
@@ -51,7 +52,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 	}
 	_ = gvr
 
-	list, err := s.List(common.YceCloudExtensions, k8s.CI, "", 0, 0, nil)
+	list, err := s.List(common.YceCloudExtensionsOps, k8s.CI, "", 0, 0, nil)
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 	for _, item := range list.Items {
 		value := item
 		ci := &v1.CI{}
-		if err := UnstructuredObjectToInstanceObj(&value, ci); err != nil {
+		if err := tools.UnstructuredObjectToInstanceObj(&value, ci); err != nil {
 			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
 			continue
 		}
@@ -69,11 +70,11 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 		}
 	}
 	ciList := &v1.CIList{}
-	if err := UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
+	if err := tools.UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
 		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
 	}
 
-	eventChan, err := s.Watch(common.YceCloudExtensions, k8s.CI, ciList.GetResourceVersion(), 0, nil)
+	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.CI, ciList.GetResourceVersion(), 0, nil)
 	if err != nil {
 		return fmt.Errorf("watch error (%s)", err)
 	}
@@ -87,7 +88,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 				return nil
 			}
 			ci := &v1.CI{}
-			err := RuntimeObjectToInstance(item.Object, ci)
+			err := tools.RuntimeObjectToInstance(item.Object, ci)
 			if err != nil {
 				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
 				continue
@@ -121,7 +122,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 		}
 
 		// {git_project_name}-{Branch}
-		project, err := extractProject(request.GitUrl)
+		project, err := tools.ExtractProject(request.GitUrl)
 		var name = fmt.Sprintf("%s-%s", project, request.Branch)
 
 		// 构造一个CI的结构
@@ -132,7 +133,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
-				Namespace: common.YceCloudExtensions,
+				Namespace: common.YceCloudExtensionsOps,
 			},
 			Spec: v1.CISpec{
 				GitURL:     &request.GitUrl,
@@ -148,13 +149,13 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 			},
 		}
 		// 转换成unstructured 类型
-		unstructured, err := InstanceToUnstructured(ci)
+		unstructured, err := tools.InstanceToUnstructured(ci)
 		if err != nil {
 			requestErr(g, err)
 			return
 		}
 		// 写入CRD配置
-		obj, _, err := s.Apply(common.YceCloudExtensions, k8s.CI, name, unstructured)
+		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, unstructured)
 		if err != nil {
 			internalApplyErr(g, err)
 			return
@@ -165,7 +166,6 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 
 	go s.Start(stop)
 	go route.Run(addr)
-
 
 	return s.recv(stop)
 }

@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/util/retry"
 	"reflect"
@@ -17,7 +16,7 @@ var _ IDataSource = &IDataSourceImpl{}
 
 type IDataSource interface {
 	List(namespace, resource, flag string, pos, size int64, selector interface{}) (*unstructured.UnstructuredList, error)
-	Get(namespace, resource, name string, subresources ...string) (runtime.Object, error)
+	Get(namespace, resource, name string, subresources ...string) (*unstructured.Unstructured, error)
 	Apply(namespace, resource, name string, obj *unstructured.Unstructured) (*unstructured.Unstructured, bool, error)
 	Delete(namespace, resource, name string) error
 	Watch(namespace string, resource, resourceVersion string, timeoutSeconds int64, selector interface{}) (<-chan watch.Event, error)
@@ -70,7 +69,7 @@ func (i *IDataSourceImpl) List(namespace, resource, flag string, pos, size int64
 	return items, nil
 }
 
-func (i *IDataSourceImpl) Get(namespace, resource, name string, subresources ...string) (runtime.Object, error) {
+func (i *IDataSourceImpl) Get(namespace, resource, name string, subresources ...string) (*unstructured.Unstructured, error) {
 	gvr, err := i.GetGvr(resource)
 	if err != nil {
 		return nil, err

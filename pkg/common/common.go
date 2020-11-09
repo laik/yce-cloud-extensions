@@ -2,6 +2,7 @@ package common
 
 import (
 	"flag"
+	"fmt"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
 )
@@ -12,7 +13,9 @@ var (
 	// DefaultConfigFile is the default bootstrap configuration
 	KubeConfig *string
 	// YceCloudExtensions yce-cloud-extensions default namespace
-	YceCloudExtensions = "yce-cloud-extensions"
+	YceCloudExtensions    = "yce-cloud-extensions"
+	// YceCloudExtensionsOps yce-cloud-extensions is ci scheduler namespace
+	YceCloudExtensionsOps = fmt.Sprintf("%s-%s", YceCloudExtensions, "ops")
 )
 
 func init() {
