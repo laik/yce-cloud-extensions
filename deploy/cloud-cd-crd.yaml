@@ -45,9 +45,6 @@ spec:
         - name: DeployNamespace
           type: string
           jsonPath: .spec.deployNamespace
-        - name: ArtifactInfo
-          type: object
-          jsonPath: .spec.artifactInfo
         - name: RetryCount
           type: string
           jsonPath: .spec.retryCount
