@@ -65,7 +65,7 @@ func (c *Service) Start(stop <-chan struct{}) {
 	}
 }
 
-func (c *Service) reconcilePipelineRun(pr runtime.Object) error {
+func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 	return nil
 }
 
@@ -75,11 +75,17 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	if err != nil {
 		return fmt.Errorf("illegal project name extract from git url (%s)", *ci.Spec.GitURL)
 	}
-	prName := pipelineRunName(projectName, *ci.Spec.Branch)
 
+	// Check Secret Config install
+	obj, err := c.checkAndRecreateConfig()
+	if err != nil {
+		return err
+	}
+
+	prName := pipelineRunName(projectName, *ci.Spec.Branch)
 	pipelineResourceName := fmt.Sprintf(pipelineResourceNameModel, prName)
 	// first create pipelineResource with pipelineRun same name
-	obj, err := c.checkAndRecreatePipelineResource(pipelineResourceName, *ci.Spec.GitURL, *ci.Spec.Branch)
+	obj, err = c.checkAndRecreatePipelineResource(pipelineResourceName, *ci.Spec.GitURL, *ci.Spec.Branch)
 	if err != nil {
 		return err
 	}
@@ -101,6 +107,72 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	return nil
 }
 
+func (c *Service) checkAndRecreateConfig() (*unstructured.Unstructured, error) {
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.TektonConfig, TektonConfigName)
+	configParams := &parameter{
+		Namespace:    common.YceCloudExtensionsOps,
+		Name:         TektonConfigName,
+		ConfigGitUrl: configGitUrl,
+		Username:     configGitUser,
+		Password:     configGitPassword,
+	}
+	defaultConfig, err := render(configParams, configTpl)
+	if err != nil {
+		return nil, err
+	}
+	if !errors.IsNotFound(err) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, TektonConfigName, obj)
+		if err != nil {
+			return nil, err
+		}
+		return obj, nil
+	}
+
+	if !tools.CompareSpecByUnstructured(defaultConfig, obj) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, TektonConfigName, defaultConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	serverAccount, err := c.Get(common.YceCloudExtensionsOps, k8s.ServiceAccount, "default")
+	if err != nil {
+		return nil, err
+	}
+
+	serviceAccountBytes, err := serverAccount.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	secretsPath := ".secrets"
+	value, err := tools.GetJSONPath(string(serviceAccountBytes), secretsPath)
+	if err != nil {
+		return nil, err
+	}
+	newValue, ok := value.([]string)
+	if !ok {
+		return nil, fmt.Errorf("assertion secretsPath value error (%v)", value)
+	}
+	if !tools.ContainStringItem(newValue, TektonConfigName) {
+		newValue = append(newValue, TektonConfigName)
+		newServiceAccountBytes, err := tools.SetJSONPath(string(serviceAccountBytes), secretsPath, newValue)
+		if err != nil {
+			return nil, err
+		}
+		serviceAccount := &unstructured.Unstructured{}
+		if err := serviceAccount.UnmarshalJSON(newServiceAccountBytes); err != nil {
+			return nil, err
+		}
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount)
+		if err != nil {
+			return nil, err
+		}
+		return obj, nil
+	}
+
+	return obj, nil
+}
+
 func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, taskName)
 	taskParams := &parameter{
@@ -120,7 +192,7 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 	}
 
 	if !tools.CompareSpecByUnstructured(defaultTask, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, taskName, obj)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, taskName, defaultTask)
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +244,7 @@ func (c *Service) checkAndRecreatePipelineRun(name, pipelineRunGraphName string)
 		// create pipelineRun
 		pipelineRunParams := &parameter{
 			Namespace:            common.YceCloudExtensions,
+			Name:                 name,
 			PipelineName:         pipelineName,
 			PipelineGraph:        pipelineGraphName,
 			PipelineRunGraph:     pipelineRunGraphName,

@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -99,4 +100,19 @@ func CompareSpecByUnstructured(source, target *unstructured.Unstructured) bool {
 		return false
 	}
 	return true
+}
+
+func GetJSONPath(src, path string) (interface{}, error) {
+	return nil, nil
+}
+
+func SetJSONPath(src, path string, value interface{}) ([]byte, error) {
+	return nil, nil
+}
+
+func ContainStringItem(list []string, item string) bool {
+	if sort.SearchStrings(list, item) >= 0 {
+		return true
+	}
+	return false
 }

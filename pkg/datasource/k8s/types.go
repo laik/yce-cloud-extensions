@@ -24,7 +24,11 @@ const (
 	PipelineResource = "pipelineresources"
 
 	// Extend Tekton Pipeline & PipelineRun resource Graph
-	TektonGraph = "tektongraphs"
+	TektonGraph  = "tektongraphs"
+	TektonConfig = "secrets"
+
+	// Kubernetes
+	ServiceAccount = "serviceaccounts"
 )
 
 type Resources struct {
@@ -84,4 +88,6 @@ func rsInit(rs *Resources) {
 
 	// tekton graph
 	rs.register(TektonGraph, schema.GroupVersionResource{Group: "fuxi.nip.io", Version: "v1", Resource: "tektongraphs"})
+	rs.register(TektonConfig, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"})
+	rs.register(ServiceAccount, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "serviceaccounts"})
 }

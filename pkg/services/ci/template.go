@@ -157,7 +157,7 @@ metadata:
   labels:
     mount: "1"
     tekton: "1"
-  name: {{.ConfigGitName}}
+  name: {{.Name}}
   namespace: {{.Namespace}}
 type: kubernetes.io/basic-auth`
 )

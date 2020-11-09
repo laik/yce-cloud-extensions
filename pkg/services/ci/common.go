@@ -13,19 +13,25 @@ const (
 	pipelineName              = "yce-cloud-extensions-pipeline"
 	pipelineGraphName         = "yce-cloud-extensions-graph"
 	pipelineResourceNameModel = "yce-cloud-extensions-%s"
+	TektonConfigName          = "yce-cloud-extensions-config"
 )
 
 var (
+	buildToolImage = "yametech/kaniko:v0.24.0"
+	destRepoUrl    = "harbor.ym/yce-cloud-extensions"
+	cacheRepoUrl   = "yce-cloud-extensions-repo-cache"
+
+	// git server config
+	configGitUrl      = "http://git.ym"
 	configGitUser     = "yce-cloud-extensions"
 	configGitPassword = "admin12345!QAZ"
-	buildToolImage    = "yametech/kaniko:v0.24.0"
-	destRepoUrl       = "harbor.ym/yce-cloud-extensions"
-	cacheRepoUrl      = "yce-cloud-extensions-repo-cache"
 )
 
 func init() {
+	flag.StringVar(&configGitUser, "git-server", configGitUser, "-git-server http://git.ym")
 	flag.StringVar(&configGitUser, "git-user", configGitUser, "-git-user username")
 	flag.StringVar(&configGitPassword, "git-password", configGitPassword, "-git-password password")
+
 	flag.StringVar(&buildToolImage, "build-tool-image", buildToolImage, "-build-tool-image yametech/kaniko:v0.24.0")
 	flag.StringVar(&destRepoUrl, "dest-repo", destRepoUrl, "-dest-repo harbor.ym/yce-cloud-extensions")
 	flag.StringVar(&cacheRepoUrl, "cache-repo", cacheRepoUrl, "-cache-repo harbor.ym/yce-cloud-extensions-repo-cache")
@@ -55,13 +61,11 @@ type parameter struct {
 	PipelineGraph        string
 	PipelineResourceName string
 	PipelineName         string
-	PipelineRunName      string
 
 	// configTpl
-	ConfigGitUrl  string
-	Username      string
-	Password      string
-	ConfigGitName string
+	ConfigGitUrl string
+	Username     string
+	Password     string
 }
 
 var _ io.Writer = &output{}
