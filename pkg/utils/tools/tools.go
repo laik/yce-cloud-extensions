@@ -75,18 +75,6 @@ func ExtractService(ServiceName string) (string, error) {
 	return _slice[len(_slice)-1], nil
 }
 
-func CompareSpecByCode(source, target []byte) bool {
-	srcUnstructured := &unstructured.Unstructured{}
-	if err := srcUnstructured.UnmarshalJSON(source); err != nil {
-		return false
-	}
-	targetUnstructured := &unstructured.Unstructured{}
-	if err := targetUnstructured.UnmarshalJSON(target); err != nil {
-		return false
-	}
-	return CompareSpecByUnstructured(srcUnstructured, targetUnstructured)
-}
-
 func CompareSpecByUnstructured(source, target *unstructured.Unstructured) bool {
 	srcUnstructuredSpec, exist := source.Object["spec"]
 	if !exist {
@@ -100,14 +88,6 @@ func CompareSpecByUnstructured(source, target *unstructured.Unstructured) bool {
 		return false
 	}
 	return true
-}
-
-func GetJSONPath(src, path string) (interface{}, error) {
-	return nil, nil
-}
-
-func SetJSONPath(src, path string, value interface{}) ([]byte, error) {
-	return nil, nil
 }
 
 func ContainStringItem(list []string, item string) bool {

@@ -6,6 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/tidwall/gjson v1.6.3
+	github.com/tidwall/sjson v1.1.2
 	github.com/yametech/nuwa v1.0.1-0.20200602142225-f13837e897ae
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
 	golang.org/x/net v0.0.0-20201027133719-8eef5233e2a1 // indirect

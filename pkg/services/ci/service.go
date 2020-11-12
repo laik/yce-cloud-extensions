@@ -10,6 +10,8 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,6 +68,7 @@ func (c *Service) Start(stop <-chan struct{}) {
 }
 
 func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
+	//
 	return nil
 }
 
@@ -144,23 +147,28 @@ func (c *Service) checkAndRecreateConfig() (*unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, err
 	}
-	secretsPath := ".secrets"
-	value, err := tools.GetJSONPath(string(serviceAccountBytes), secretsPath)
-	if err != nil {
-		return nil, err
+	secretsPath := "secrets"
+
+	var newValue = make([]string, 0)
+	gjson.Get(string(serviceAccountBytes), secretsPath).
+		ForEach(
+			func(_, v gjson.Result) bool {
+				newValue = append(newValue, v.String())
+				return true
+			})
+
+	if len(newValue) < 1 {
+		return nil, fmt.Errorf("get secrets not value")
 	}
-	newValue, ok := value.([]string)
-	if !ok {
-		return nil, fmt.Errorf("assertion secretsPath value error (%v)", value)
-	}
+
 	if !tools.ContainStringItem(newValue, TektonConfigName) {
 		newValue = append(newValue, TektonConfigName)
-		newServiceAccountBytes, err := tools.SetJSONPath(string(serviceAccountBytes), secretsPath, newValue)
+		newServiceAccountString, err := sjson.Set(string(serviceAccountBytes), secretsPath, newValue)
 		if err != nil {
 			return nil, err
 		}
 		serviceAccount := &unstructured.Unstructured{}
-		if err := serviceAccount.UnmarshalJSON(newServiceAccountBytes); err != nil {
+		if err := serviceAccount.UnmarshalJSON([]byte(newServiceAccountString)); err != nil {
 			return nil, err
 		}
 		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount)
