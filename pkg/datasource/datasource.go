@@ -86,7 +86,7 @@ func (i *IDataSourceImpl) Get(namespace, resource, name string, subresources ...
 }
 
 func (i *IDataSourceImpl) Apply(namespace, resource, name string, obj *unstructured.Unstructured) (result *unstructured.Unstructured, isUpdate bool, err error) {
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		gvr, err := i.GetGvr(resource)
 		if err != nil {
 			return err

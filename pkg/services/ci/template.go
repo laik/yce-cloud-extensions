@@ -7,14 +7,7 @@ metadata:
   name: {{.Name}}
   namespace: {{.Namespace}}
   labels:
-    namespace: yce
-  ownerReferences:
-    - apiVersion: {{.ApiVersion}}
-      kind: Pipeline
-      name: {{.PipelineOrPipelineRunName}}
-      uid: {{.Uid}}
-      controller: false
-      blockOwnerDeletion: false
+    namespace: {{.Namespace}}
 spec:
   data: >-
     {"nodes":[{"id":"1-1","x":20,"y":20,"role":0,"taskName":"yce-cloud-extensions-task","anchorPoints":[[0,0.5],[1,0.5]],"addnode":true,"subnode":true,"type":"pipeline-node","linkPoints":{"right":true,"left":true},"style":{}}],"edges":[],"combos":[],"groups":[]}
@@ -25,13 +18,29 @@ spec:
 kind: Pipeline
 metadata:
   annotations:
-    fuxi.nip.io/tektongraphs: yce-cloud-extensions-pipeline-default
+    fuxi.nip.io/tektongraphs: {{.PipelineGraph}}
     namespace: {{.Namespace}}
   labels:
     namespace: {{.Namespace}}
   name: {{.Name}}
   namespace: {{.Namespace}}
 spec:
+  params:
+    - default: ''
+      name: project_name
+      type: string
+    - default: ''
+      name: project_version
+      type: string
+    - default: ''
+      name: build_tool_image
+      type: string
+    - default: ''
+      name: dest_repo_url
+      type: string
+    - default: ''
+      name: cache_repo_url
+      type: string
   resources:
     - name: git-addr
       type: git
@@ -39,22 +48,22 @@ spec:
     - name: yce-cloud-extensions-task
       params:
         - name: project_name
-          value: {{.ProjectName}}
+          value: $(params.project_name)
         - name: project_version
-          value: {{.ProjectVersion}}
+          value: $(params.project_version)
         - name: build_tool_image
-          value: {{.BuildToolImage}}
+          value: $(params.build_tool_image)
         - name: dest_repo_url
-          value: {{.DestRepoUrl}}
+          value: $(params.dest_repo_url)
         - name: cache_repo_url
-          value: {{.CacheRepoUrl}}
+          value: $(params.cache_repo_url)
       resources:
         inputs:
           - name: git
             resource: git-addr
       taskRef:
         kind: Task
-        name: yce-cloud-extensions-task`
+        name: {{.TaskName}}`
 
 	taskTpl = `apiVersion: tekton.dev/v1alpha1
 kind: Task
@@ -62,7 +71,7 @@ metadata:
   labels:
     namespace: {{.Namespace}}
   name: yce-cloud-extensions-task
-  namespace: {{.Namespace}}-ops
+  namespace: {{.Namespace}}
 spec:
   params:
     - default: none
@@ -114,7 +123,7 @@ apiVersion: tekton.dev/v1alpha1
 metadata:
   labels:
     namespace: {{.Namespace}}
-  name: {{.Name}}}
+  name: {{.Name}}
   namespace: {{.Namespace}}
 spec:
   params:
@@ -130,13 +139,24 @@ metadata:
   annotations:
     fuxi.nip.io/run-tektongraphs: {{.PipelineRunGraph}}
     fuxi.nip.io/tektongraphs: {{.PipelineGraph}}
-    namespace: {{.Namepsace}}
+    namespace: {{.Namespace}}
   labels:
-    namespace: {{.Namepsace}}
+    namespace: {{.Namespace}}
     tekton.dev/pipeline: {{.PipelineName}}
-  name: {{.PipelineRunName}}
-  namespace: {{.Namepsace}}-ops
+  name: {{.Name}}
+  namespace: {{.Namespace}}
 spec:
+  params:
+    - name: project_name
+      value: {{.ProjectName}}
+    - name: project_version
+      value: {{.ProjectVersion}}
+    - name: build_tool_image
+      value: {{.BuildToolImage}}
+    - name: dest_repo_url
+      value: {{.DestRepoUrl}}
+    - name: cache_repo_url
+      value: {{.CacheRepoUrl}}
   pipelineRef:
     name: {{.PipelineName}}
   resources:
@@ -146,10 +166,10 @@ spec:
   serviceAccountName: default
   timeout: 1h0m0s`
 
-	configTpl = `apiVersion: v1
+	configGitTpl = `apiVersion: v1
 data:
-  password: {{.Password}}
-  username: {{.Username}}
+  password: {{.GitPassword}}
+  username: {{.GitUsername}}
 kind: Secret
 metadata:
   annotations:
@@ -159,5 +179,20 @@ metadata:
     tekton: "1"
   name: {{.Name}}
   namespace: {{.Namespace}}
+type: kubernetes.io/basic-auth`
+
+	configRegistryTpl = `apiVersion: v1
+kind: Secret
+metadata:
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+  labels:
+    mount: '1'
+    tekton: '1'
+  annotations:
+    tekton.dev/docker-0: {{.RegistryRepoUrl}}
+data:
+  password: {{.RegistryPassword}}
+  username: {{.RegistryUsername}}
 type: kubernetes.io/basic-auth`
 )

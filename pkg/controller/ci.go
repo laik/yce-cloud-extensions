@@ -11,6 +11,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
+	servicesci "github.com/laik/yce-cloud-extensions/pkg/services/ci"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,23 +27,40 @@ type CIController struct {
 	services.IService
 }
 
-func (s *CIController) Handle(addr string) {
-	var data map[string]interface{}
-	request := s.Post(addr)
-
+func (s *CIController) response2echoer(data map[string]interface{}) error {
+	request := s.Post(common.EchoerAddr)
 	for k, v := range data {
 		request.Params(k, v)
 	}
 	if err := request.Do(); err != nil {
-		panic(err)
-	}
-}
-
-func (s *CIController) handle(ci *v1.CI) error {
-	if ci.Spec.Done {
-		return nil
+		return err
 	}
 	return nil
+}
+
+func (s *CIController) reconcile(ci *v1.CI) error {
+	if !ci.Spec.Done {
+		return nil
+	}
+	resp := &resource.Response{
+		FlowId:   *ci.Spec.FlowId,
+		StepName: *ci.Spec.StepName,
+		AckState: ci.Spec.AckStates[0],
+		UUID:     *ci.Spec.UUID,
+		Done:     ci.Spec.Done,
+	}
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]interface{})
+	err = json.Unmarshal(respBytes, &data)
+	if err != nil {
+		return err
+	}
+
+	return s.response2echoer(data)
 }
 
 func (s *CIController) recv(stop <-chan struct{}) error {
@@ -64,7 +82,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
 			continue
 		}
-		if err := s.handle(ci); err != nil {
+		if err := s.reconcile(ci); err != nil {
 			fmt.Printf("handle ci error (%s)", err)
 			continue
 		}
@@ -93,7 +111,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
 				continue
 			}
-			if err := s.handle(ci); err != nil {
+			if err := s.reconcile(ci); err != nil {
 				fmt.Printf("ci controller handle error (%s) (%v)", err, item.Object)
 				continue
 			}
@@ -171,8 +189,10 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 }
 
 func NewCIController(cfg *configure.InstallConfigure) Interface {
+	drs := datasource.NewIDataSource(cfg)
 	return &CIController{
 		InstallConfigure: cfg,
-		IDataSource:      datasource.NewIDataSource(cfg),
+		IService:         servicesci.NewService(cfg, drs),
+		IDataSource:      drs,
 	}
 }

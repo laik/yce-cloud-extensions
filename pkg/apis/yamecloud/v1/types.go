@@ -2,6 +2,11 @@ package v1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+const (
+	SuccessState = "SUCCESS"
+	FailState    = "FAil"
+)
+
 // +genclient
 // +genclient:noStatus
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -47,12 +52,12 @@ type CD struct {
 }
 
 type CDSpec struct {
-	ServiceName     *string           `json:"serviceName"`
-	ServiceImage    *string           `json:"serviceImage"`
-	DeployNamespace *string           `json:"deployNamespace"`
-	ArtifactInfo    ArtifactInfo      `json:"artifactInfo"`
-	DeployType      *string           `json:"DeployType"`
-	RetryCount      *uint32           `json:"retryCount"`
+	ServiceName     *string      `json:"serviceName"`
+	ServiceImage    *string      `json:"serviceImage"`
+	DeployNamespace *string      `json:"deployNamespace"`
+	ArtifactInfo    ArtifactInfo `json:"artifactInfo"`
+	DeployType      *string      `json:"DeployType"`
+	RetryCount      *uint32      `json:"retryCount"`
 
 	Done bool `json:"done"`
 
@@ -72,7 +77,7 @@ type ArtifactInfo struct {
 type ServicePorts struct {
 	Name       string `json:"name"`
 	Protocol   string `json:"protocol"`
-	Port       int32 `json:"port"`
+	Port       int32  `json:"port"`
 	TargetPort string `json:"targetPort"`
 }
 

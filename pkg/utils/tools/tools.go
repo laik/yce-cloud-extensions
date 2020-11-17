@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
@@ -76,6 +77,9 @@ func ExtractService(ServiceName string) (string, error) {
 }
 
 func CompareSpecByUnstructured(source, target *unstructured.Unstructured) bool {
+	if source == nil || target == nil {
+		return false
+	}
 	srcUnstructuredSpec, exist := source.Object["spec"]
 	if !exist {
 		return false
@@ -95,4 +99,69 @@ func ContainStringItem(list []string, item string) bool {
 		return true
 	}
 	return false
+}
+
+func CloneNewObject(src *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	bytes, err := src.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	delete := func(res string, paths []string) (string, error) {
+		var err error
+		for _, path := range paths {
+			res, err = sjson.Delete(res, path)
+			if err != nil {
+				return "", err
+			}
+		}
+		return res, nil
+	}
+
+	dest, err := delete(string(bytes), []string{
+		"metadata.creationTimestamp",
+		"metadata.generation",
+		"metadata.managedFields",
+		"metadata.resourceVersion",
+		"metadata.selfLink",
+		"metadata.uid",
+		"status",
+	})
+
+	obj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(dest), &obj); err != nil {
+		return nil, err
+	}
+
+	return &unstructured.Unstructured{Object: obj}, nil
+}
+
+func SetObjectOwner(object []byte, apiVersion, kind, name, uid string) (*unstructured.Unstructured, error) {
+	type ownerReference struct {
+		ApiVersion         string `json:"apiVersion"`
+		Kind               string `json:"kind"`
+		Name               string `json:"name"`
+		UID                string `json:"uid"`
+		Controller         bool   `json:"controller"`
+		BlockOwnerDeletion bool   `json:"blockOwnerDeletion"`
+	}
+
+	s, err := sjson.Set(string(object), "metadata.ownerReferences", []ownerReference{{
+		ApiVersion:         apiVersion,
+		Kind:               kind,
+		Name:               name,
+		UID:                uid,
+		Controller:         false,
+		BlockOwnerDeletion: false,
+	}})
+	if err != nil {
+		return nil, err
+	}
+
+	obj := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(s), &obj); err != nil {
+		return nil, err
+	}
+
+	return &unstructured.Unstructured{Object: obj}, nil
 }
