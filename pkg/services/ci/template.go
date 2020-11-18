@@ -96,8 +96,8 @@ spec:
     outputs: []
   steps:
     - args:
-        - '--dockerfile=/workspace/$(params.project_name)/Dockerfile'
-        - '--context=/workspace/$(params.project_name)'
+        - '--dockerfile=/workspace/git/Dockerfile'
+        - '--context=/workspace/git'
         - '--insecure'
         - '--force'
         - '--destination=$(params.dest_repo_url)/$(params.project_name):$(params.project_version)'
@@ -106,8 +106,8 @@ spec:
         - '--cache-repo=$(params.cache_repo_url)/$(params.project_name)-cache'
         - '--skip-unused-stages=true'
       env:
-        - name: DOCKER_CONFIG
-          value: /tekton/home/.docker
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker"
       image: $(params.build_tool_image)
       name: main
       resources: {}

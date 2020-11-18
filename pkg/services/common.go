@@ -20,7 +20,7 @@ const (
 var (
 	BuildToolImage = "yametech/kaniko:v0.24.0"
 	DestRepoUrl    = "harbor.ym/yce-cloud-extensions"
-	CacheRepoUrl   = "yce-cloud-extensions-repo-cache"
+	CacheRepoUrl   = "harbor.ym/yce-cloud-extensions-repo-cache"
 
 	// git server config
 	ConfigGitUrl      = "http://git.ym"

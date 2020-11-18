@@ -56,8 +56,8 @@ spec:
         - '--cache-repo=$(params.cache_repo_url)/$(params.project_name)-cache'
         - '--skip-unused-stages=true'
       env:
-        - name: DOCKER_CONFIG
-          value: /tekton/home/.docker
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker"
       image: $(params.build_tool_image)
       name: main
       resources: {}

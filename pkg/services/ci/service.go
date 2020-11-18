@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 var _ services.IService = &Service{}
@@ -35,12 +36,12 @@ func NewService(cfg *configure.InstallConfigure, drs datasource.IDataSource) ser
 func (c *Service) Start(stop <-chan struct{}) {
 	pipelineRunChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.PipelineRun, "0", 0, nil)
 	if err != nil {
-		fmt.Printf("watch pipelineRun error (%s)\n", err)
+		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
 	}
 
 	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, "0", 0, nil)
 	if err != nil {
-		fmt.Printf("watch ciChan error (%s)\n", err)
+		fmt.Printf("%s watch ciChan error (%s)\n", common.ERROR, err)
 	}
 	for {
 		select {
@@ -48,19 +49,26 @@ func (c *Service) Start(stop <-chan struct{}) {
 			return
 		case pipelineRun, ok := <-pipelineRunChan:
 			if !ok {
-				fmt.Printf("pipeline run channel closed\n")
+				fmt.Printf("%s pipeline run channel closed\n", common.ERROR)
 				return
 			}
 			if err := c.reconcilePipelineRun(pipelineRun.Object); err != nil {
-				fmt.Printf("%s pipeline run channel recv handle object (%v) error (%s)\n", common.ERROR, pipelineRun.Object, err)
+				fmt.Printf("%s pipeline run channel recv handle error (%s)\n", common.ERROR, err)
 			}
-		case ci, ok := <-ciChan:
+		case ciEvent, ok := <-ciChan:
 			if !ok {
-				fmt.Printf("ci channel closed\n")
+				fmt.Printf("%s ci channel closed\n", common.ERROR)
 				return
 			}
+			// ignore delete event
+			switch ciEvent.Type {
+			case watch.Added, watch.Modified:
+			default:
+				return
+			}
+
 			ciObj := &v1.CI{}
-			if err := tools.RuntimeObjectToInstance(ci.Object, ciObj); err != nil {
+			if err := tools.RuntimeObjectToInstance(ciEvent.Object, ciObj); err != nil {
 				fmt.Printf("%s ci channel recv object can't not convert to ci object (%s)\n", common.ERROR, err)
 			}
 			if err := c.reconcileCI(ciObj); err != nil {
@@ -114,7 +122,7 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 
 	obj, err := c.Get(common.YceCloudExtensionsOps, pipelineRunName, k8s.CI)
 	if err != nil {
-		return err
+		return fmt.Errorf("get ci %s", err)
 	}
 	ci := &v1.CI{}
 	if err := tools.UnstructuredObjectToInstanceObj(obj, ci); err != nil {
@@ -205,10 +213,10 @@ func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, 
 		Namespace:        common.YceCloudExtensionsOps,
 		Name:             services.TektonDockerConfigName,
 		RegistryRepoUrl:  services.ConfigRegistryUrl,
-		RegistryUsername: base64.StdEncoding.EncodeToString([]byte(services.ConfigRegistryUrl)),
+		RegistryUsername: base64.StdEncoding.EncodeToString([]byte(services.ConfigRegistryUserName)),
 		RegistryPassword: base64.StdEncoding.EncodeToString([]byte(services.ConfigRegistryPassword)),
 	}
-	defaultConfig, err := services.Render(configParams, configGitTpl)
+	defaultConfig, err := services.Render(configParams, configRegistryTpl)
 	if err != nil {
 		return nil, err
 	}
@@ -448,12 +456,14 @@ func (c *Service) checkAndRecreatePipelineRun(
 		if err != nil {
 			return nil, err
 		}
-
+		err = c.Delete(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
+		if err != nil {
+			return nil, err
+		}
 		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, clonePipelineRunObject)
 		if err != nil {
 			return nil, err
 		}
-
 		pipelineRunGraph, err = c.checkAndRecreateGraph(pipelineRunGraph.GetName())
 		if err != nil {
 			return nil, err
