@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-resty/resty/v2 v2.3.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/tidwall/gjson v1.6.3
@@ -18,6 +19,7 @@ require (
 	k8s.io/client-go v0.18.6
 	k8s.io/utils v0.0.0-20201027101359-01387209bb0d // indirect
 	sigs.k8s.io/controller-runtime v0.6.3 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (

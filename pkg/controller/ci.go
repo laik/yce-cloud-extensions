@@ -13,6 +13,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	servicesci "github.com/laik/yce-cloud-extensions/pkg/services/ci"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
+	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -193,6 +194,7 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 	return &CIController{
 		InstallConfigure: cfg,
 		IService:         servicesci.NewService(cfg, drs),
+		IClient:          httpclient.NewIClient(),
 		IDataSource:      drs,
 	}
 }

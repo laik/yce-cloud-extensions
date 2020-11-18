@@ -47,12 +47,15 @@ func (c *Service) Start(stop <-chan struct{}) {
 		select {
 		case <-stop:
 			return
-		case pipelineRun, ok := <-pipelineRunChan:
+		case pipelineRunEvent, ok := <-pipelineRunChan:
 			if !ok {
 				fmt.Printf("%s pipeline run channel closed\n", common.ERROR)
 				return
 			}
-			if err := c.reconcilePipelineRun(pipelineRun.Object); err != nil {
+			if pipelineRunEvent.Type == watch.Deleted {
+				continue
+			}
+			if err := c.reconcilePipelineRun(pipelineRunEvent.Object); err != nil {
 				fmt.Printf("%s pipeline run channel recv handle error (%s)\n", common.ERROR, err)
 			}
 		case ciEvent, ok := <-ciChan:
@@ -61,12 +64,9 @@ func (c *Service) Start(stop <-chan struct{}) {
 				return
 			}
 			// ignore delete event
-			switch ciEvent.Type {
-			case watch.Added, watch.Modified:
-			default:
-				return
+			if ciEvent.Type == watch.Deleted {
+				continue
 			}
-
 			ciObj := &v1.CI{}
 			if err := tools.RuntimeObjectToInstance(ciEvent.Object, ciObj); err != nil {
 				fmt.Printf("%s ci channel recv object can't not convert to ci object (%s)\n", common.ERROR, err)
@@ -120,7 +120,7 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 		return nil
 	}
 
-	obj, err := c.Get(common.YceCloudExtensionsOps, pipelineRunName, k8s.CI)
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.CI, pipelineRunName)
 	if err != nil {
 		return fmt.Errorf("get ci %s", err)
 	}
@@ -151,6 +151,9 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 
 // Generator Tekton Task/Pipeline/PipelineResource/PipelineRun/Config...
 func (c *Service) reconcileCI(ci *v1.CI) error {
+	if ci.Spec.Done {
+		return nil
+	}
 	projectName, err := tools.ExtractProject(*ci.Spec.GitURL)
 	if err != nil {
 		return fmt.Errorf("illegal project name extract from git url (%s)", *ci.Spec.GitURL)
@@ -197,7 +200,15 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	}
 
 	// check and reconcile pipelineRun
-	obj, err = c.checkAndRecreatePipelineRun(prName, projectName, *ci.Spec.CommitID, pipelineRunGraphName, prName, pipelineRunGraph)
+	obj, err = c.checkAndRecreatePipelineRun(
+		prName,
+		projectName,
+		*ci.Spec.CommitID,
+		pipelineRunGraphName,
+		prName,
+		*ci.Spec.Output,
+		pipelineRunGraph,
+	)
 	if err != nil {
 		return err
 	}
@@ -417,13 +428,18 @@ func (c *Service) checkAndRecreatePipelineRun(
 	projectName,
 	projectVersion,
 	pipelineRunGraphName,
-	pipelineResourceName string,
+	pipelineResourceName,
+	outputUrl string,
 	pipelineRunGraph *unstructured.Unstructured,
 
 ) (*unstructured.Unstructured, error) {
 	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
 	if errors.IsNotFound(err) {
 		// create pipelineRun
+		_outputUrl := services.DestRepoUrl
+		if outputUrl != "" {
+			_outputUrl = outputUrl
+		}
 		pipelineRunParams := &services.Parameter{
 			Namespace:            common.YceCloudExtensionsOps,
 			Name:                 name,
@@ -434,7 +450,7 @@ func (c *Service) checkAndRecreatePipelineRun(
 			ProjectName:          projectName,
 			ProjectVersion:       projectVersion,
 			BuildToolImage:       services.BuildToolImage,
-			DestRepoUrl:          services.DestRepoUrl,
+			DestRepoUrl:          _outputUrl,
 			CacheRepoUrl:         services.CacheRepoUrl,
 		}
 		obj, err = services.Render(pipelineRunParams, pipelineRunTpl)
