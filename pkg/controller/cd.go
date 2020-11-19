@@ -133,14 +133,11 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    request.ArtifactInfo,
 				DeployType:      &request.DeployType,
-
-				FlowId:     &request.FlowId,
-				StepName:   &request.StepName,
-				AckStates:  request.AckStates,
-				UUID:       &request.UUID,
-				RetryCount: &request.RetryCount,
-
-				Done: false,
+				FlowId:          &request.FlowId,
+				StepName:        &request.StepName,
+				AckStates:       request.AckStates,
+				UUID:            &request.UUID,
+				Done:            false,
 			},
 		}
 		// 转换成unstructured 类型

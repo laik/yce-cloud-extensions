@@ -196,3 +196,36 @@ data:
   username: {{.RegistryUsername}}
 type: kubernetes.io/basic-auth`
 )
+
+type params struct {
+	// common
+	Namespace string
+	Name      string
+	// pipelineResourceTpl && pipelineTpl
+	GitUrl string
+	Branch string
+	//Retries uint64
+	// graphTpl
+	ApiVersion                string
+	PipelineOrPipelineRunName string
+	Uid                       string
+	// pipelineRunTpl
+	PipelineRunGraph     string
+	PipelineGraph        string
+	PipelineResourceName string
+	PipelineName         string
+	ProjectName          string
+	ProjectVersion       string
+	BuildToolImage       string
+	DestRepoUrl          string
+	CacheRepoUrl         string
+	TaskName             string
+	// configGitTpl
+	ConfigGitUrl string
+	GitUsername  string
+	GitPassword  string
+	// configRegistryTpl
+	RegistryRepoUrl  string
+	RegistryPassword string
+	RegistryUsername string
+}

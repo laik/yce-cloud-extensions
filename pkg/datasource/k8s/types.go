@@ -27,8 +27,12 @@ const (
 	TektonGraph  = "tektongraphs"
 	TektonConfig = "secrets"
 
+	// Stone deployment resource
+	Stone = "stones"
+
 	// Kubernetes
 	ServiceAccount = "serviceaccounts"
+	Namespace      = "namespaces"
 )
 
 type Resources struct {
@@ -79,15 +83,20 @@ func rsInit(rs *Resources) {
 	rs.register(CI, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CI})
 	rs.register(CD, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CD})
 
+	rs.register(Stone, schema.GroupVersionResource{Group: "nuwa.nip.io", Version: "v1", Resource: Stone})
+
 	// tekton.dev resource view
-	rs.register(Pipeline, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "pipelines"})
-	rs.register(PipelineRun, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "pipelineruns"})
-	rs.register(Task, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "tasks"})
-	rs.register(TaskRun, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "taskruns"})
-	rs.register(PipelineResource, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "pipelineresources"})
+	rs.register(Pipeline, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: Pipeline})
+	rs.register(PipelineRun, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: PipelineRun})
+	rs.register(Task, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: Task})
+	rs.register(TaskRun, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: TaskRun})
+	rs.register(PipelineResource, schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: PipelineResource})
 
 	// tekton graph
-	rs.register(TektonGraph, schema.GroupVersionResource{Group: "fuxi.nip.io", Version: "v1", Resource: "tektongraphs"})
-	rs.register(TektonConfig, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "secrets"})
-	rs.register(ServiceAccount, schema.GroupVersionResource{Group: "", Version: "v1", Resource: "serviceaccounts"})
+	rs.register(TektonGraph, schema.GroupVersionResource{Group: "fuxi.nip.io", Version: "v1", Resource: TektonGraph})
+	rs.register(TektonConfig, schema.GroupVersionResource{Group: "", Version: "v1", Resource: TektonConfig})
+
+	// kubernetes
+	rs.register(ServiceAccount, schema.GroupVersionResource{Group: "", Version: "v1", Resource: ServiceAccount})
+	rs.register(Namespace, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Namespace})
 }

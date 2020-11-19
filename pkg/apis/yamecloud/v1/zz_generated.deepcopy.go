@@ -113,11 +113,6 @@ func (in *CDSpec) DeepCopyInto(out *CDSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.RetryCount != nil {
-		in, out := &in.RetryCount, &out.RetryCount
-		*out = new(uint32)
-		**out = **in
-	}
 	if in.FlowId != nil {
 		in, out := &in.FlowId, &out.FlowId
 		*out = new(string)

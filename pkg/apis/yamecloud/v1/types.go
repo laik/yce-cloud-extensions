@@ -56,16 +56,17 @@ type CDSpec struct {
 	ServiceImage    *string      `json:"serviceImage"`
 	DeployNamespace *string      `json:"deployNamespace"`
 	ArtifactInfo    ArtifactInfo `json:"artifactInfo"`
-	DeployType      *string      `json:"DeployType"`
-	RetryCount      *uint32      `json:"retryCount"`
-
-	Done bool `json:"done"`
-
-	//------
-	FlowId    *string  `json:"flowId"`
-	StepName  *string  `json:"stepName"`
-	AckStates []string `json:"ackStates"`
-	UUID      *string  `json:"uuid"`
+	DeployType      *string      `json:"deployType"`
+	CPULimit        *string      `json:"cpuLimit"`
+	MEMLimit        *string      `json:"memLimit"`
+	CPURequests     *string      `json:"cpuRequests"`
+	MEMRequests     *string      `json:"memRequests"`
+	Replicas        uint32       `json:"replicas"`
+	Done            bool         `json:"done"`
+	FlowId          *string      `json:"flowId"`
+	StepName        *string      `json:"stepName"`
+	AckStates       []string     `json:"ackStates"`
+	UUID            *string      `json:"uuid"`
 }
 
 type ArtifactInfo struct {
@@ -78,7 +79,7 @@ type ServicePorts struct {
 	Name       string `json:"name"`
 	Protocol   string `json:"protocol"`
 	Port       int32  `json:"port"`
-	TargetPort string `json:"targetPort"`
+	TargetPort int32  `json:"targetPort"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

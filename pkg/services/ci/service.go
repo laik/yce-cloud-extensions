@@ -220,7 +220,7 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, error) {
 	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonDockerConfigName)
 
-	configParams := &services.Parameter{
+	configParams := params{
 		Namespace:        common.YceCloudExtensionsOps,
 		Name:             services.TektonDockerConfigName,
 		RegistryRepoUrl:  services.ConfigRegistryUrl,
@@ -292,7 +292,7 @@ func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, 
 func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error) {
 	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonGitConfigName)
 
-	configParams := &services.Parameter{
+	configParams := params{
 		Namespace:    common.YceCloudExtensionsOps,
 		Name:         services.TektonGitConfigName,
 		ConfigGitUrl: services.ConfigGitUrl,
@@ -363,7 +363,7 @@ func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error
 
 func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, services.TaskName)
-	taskParams := &services.Parameter{
+	taskParams := params{
 		Namespace: common.YceCloudExtensionsOps,
 		Name:      services.TaskName,
 	}
@@ -390,7 +390,7 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 
 func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error) {
 	getObj, err := c.Get(common.YceCloudExtensionsOps, k8s.Pipeline, services.TaskName)
-	pipelineParams := &services.Parameter{
+	pipelineParams := params{
 		Namespace:     common.YceCloudExtensionsOps,
 		Name:          services.PipelineName,
 		PipelineGraph: services.PipelineGraphName,
@@ -440,7 +440,7 @@ func (c *Service) checkAndRecreatePipelineRun(
 		if outputUrl != "" {
 			_outputUrl = outputUrl
 		}
-		pipelineRunParams := &services.Parameter{
+		pipelineRunParams := params{
 			Namespace:            common.YceCloudExtensionsOps,
 			Name:                 name,
 			PipelineName:         services.PipelineName,
@@ -507,7 +507,7 @@ OWNER_REF:
 }
 
 func (c *Service) checkAndRecreateGraph(name string) (*unstructured.Unstructured, error) {
-	graphParams := &services.Parameter{
+	graphParams := params{
 		Namespace: common.YceCloudExtensionsOps,
 		Name:      name,
 	}
@@ -523,7 +523,7 @@ func (c *Service) checkAndRecreateGraph(name string) (*unstructured.Unstructured
 }
 
 func (c *Service) checkAndRecreatePipelineResource(name, gitUrl, branch string) (*unstructured.Unstructured, error) {
-	pipelineResourceParams := &services.Parameter{
+	pipelineResourceParams := params{
 		Namespace: common.YceCloudExtensionsOps,
 		Name:      name,
 		GitUrl:    gitUrl,

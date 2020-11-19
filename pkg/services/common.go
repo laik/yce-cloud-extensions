@@ -46,39 +46,6 @@ func init() {
 	flag.StringVar(&CacheRepoUrl, "cache-repo", CacheRepoUrl, "-cache-repo harbor.ym/yce-cloud-extensions-repo-cache")
 }
 
-type Parameter struct {
-	// common
-	Namespace string
-	Name      string
-	// pipelineResourceTpl && pipelineTpl
-	GitUrl string
-	Branch string
-	//Retries uint64
-	// graphTpl
-	ApiVersion                string
-	PipelineOrPipelineRunName string
-	Uid                       string
-	// pipelineRunTpl
-	PipelineRunGraph     string
-	PipelineGraph        string
-	PipelineResourceName string
-	PipelineName         string
-	ProjectName          string
-	ProjectVersion       string
-	BuildToolImage       string
-	DestRepoUrl          string
-	CacheRepoUrl         string
-	TaskName             string
-	// configGitTpl
-	ConfigGitUrl string
-	GitUsername  string
-	GitPassword  string
-	// configRegistryTpl
-	RegistryRepoUrl  string
-	RegistryPassword string
-	RegistryUsername string
-}
-
 var _ io.Writer = &Output{}
 
 type Output struct{ Data []byte }
@@ -91,13 +58,13 @@ func (o *Output) Write(p []byte) (n int, err error) {
 	return
 }
 
-func Render(p *Parameter, tpl string) (*unstructured.Unstructured, error) {
+func Render(data interface{}, tpl string) (*unstructured.Unstructured, error) {
 	t, err := template.New("").Parse(tpl)
 	if err != nil {
 		return nil, err
 	}
 	o := &Output{}
-	if err := t.Execute(o, p); err != nil {
+	if err := t.Execute(o, data); err != nil {
 		return nil, err
 	}
 

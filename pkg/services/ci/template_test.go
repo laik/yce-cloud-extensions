@@ -2,7 +2,8 @@ package ci
 
 import (
 	"github.com/laik/yce-cloud-extensions/pkg/services"
-	"strings"
+	"gopkg.in/yaml.v2"
+	"reflect"
 	"testing"
 	"text/template"
 )
@@ -12,7 +13,7 @@ var tt = template.New("template")
 func TestTaskConstructor(t *testing.T) {
 	o := &services.Output{}
 	tt = template.Must(tt.Parse(taskTpl))
-	if err := tt.Execute(o, &services.Parameter{Namespace: "test"}); err != nil {
+	if err := tt.Execute(o, &params{Namespace: "test"}); err != nil {
 		t.Fatal(err)
 	}
 	expected := `apiVersion: tekton.dev/v1alpha1
@@ -46,8 +47,8 @@ spec:
     outputs: []
   steps:
     - args:
-        - '--dockerfile=/workspace/$(params.project_name)/Dockerfile.ci'
-        - '--context=/workspace/$(params.project_name)'
+        - '--dockerfile=/workspace/git/Dockerfile.ci'
+        - '--context=/workspace/git'
         - '--insecure'
         - '--force'
         - '--destination=$(params.dest_repo_url)/$(params.project_name):$(params.project_version)'
@@ -67,8 +68,12 @@ spec:
   volumes:
     - emptyDir: {}
       name: build-path`
-	data := string(o.Data)
-	if !strings.EqualFold(data, expected) {
+	src, dest := make(map[string]interface{}), make(map[string]interface{})
+	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal([]byte(expected), dest); err != nil || err1 != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(src, dest) {
 		t.Fatal("expect not equal")
 	}
 
@@ -78,7 +83,7 @@ func TestPipelineConstructor(t *testing.T) {
 	o := &services.Output{}
 	tt = template.Must(tt.Parse(pipelineTpl))
 	if err := tt.Execute(o,
-		&services.Parameter{
+		&params{
 			Namespace:     "test-ops",
 			Name:          "yce-cloud-extensions-pipeline",
 			PipelineGraph: "my-graph",
@@ -137,8 +142,12 @@ spec:
         kind: Task
         name: my-task`
 
-	data := string(o.Data)
-	if !strings.EqualFold(data, expected) {
+	src, dest := make(map[string]interface{}), make(map[string]interface{})
+	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal([]byte(expected), dest); err != nil || err1 != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(src, dest) {
 		t.Fatal("expect not equal")
 	}
 }
