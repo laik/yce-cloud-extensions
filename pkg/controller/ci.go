@@ -109,11 +109,11 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 			ci := &v1.CI{}
 			err := tools.RuntimeObjectToInstance(item.Object, ci)
 			if err != nil {
-				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
+				fmt.Printf("%s RuntimeObjectToInstance error (%s)", common.WARN, err)
 				continue
 			}
 			if err := s.reconcile(ci); err != nil {
-				fmt.Printf("ci controller handle error (%s) (%v)", err, item.Object)
+				fmt.Printf("%s ci controller handle error (%s)", common.ERROR, err)
 				continue
 			}
 		}

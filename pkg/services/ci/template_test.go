@@ -46,7 +46,7 @@ spec:
     outputs: []
   steps:
     - args:
-        - '--dockerfile=/workspace/$(params.project_name)/Dockerfile'
+        - '--dockerfile=/workspace/$(params.project_name)/Dockerfile.ci'
         - '--context=/workspace/$(params.project_name)'
         - '--insecure'
         - '--force'
