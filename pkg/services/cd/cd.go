@@ -67,6 +67,14 @@ func (c *CDService) Start(stop <-chan struct{}) {
 }
 
 func (c *CDService) reconcileStone(stone runtime.Object) error {
+	stoneBytes, err := json.Marshal(stone)
+	if err != nil {
+		return err
+	}
+	labels := make(map[string]string)
+	if err := json.Unmarshal([]byte(gjson.Get(string(stoneBytes), "metadata.labels").String()), labels); err != nil {
+		return err
+	}
 
 	return nil
 }

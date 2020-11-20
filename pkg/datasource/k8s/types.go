@@ -33,6 +33,7 @@ const (
 	// Kubernetes
 	ServiceAccount = "serviceaccounts"
 	Namespace      = "namespaces"
+	Pod            = "pods"
 )
 
 type Resources struct {
@@ -99,4 +100,5 @@ func rsInit(rs *Resources) {
 	// kubernetes
 	rs.register(ServiceAccount, schema.GroupVersionResource{Group: "", Version: "v1", Resource: ServiceAccount})
 	rs.register(Namespace, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Namespace})
+	rs.register(Pod, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Pod})
 }
