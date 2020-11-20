@@ -3,6 +3,8 @@ package cd
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
@@ -11,6 +13,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	"github.com/tidwall/gjson"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -66,14 +69,59 @@ func (c *CDService) Start(stop <-chan struct{}) {
 	}
 }
 
+func labelsToQuery(data map[string]string) string {
+	result := make([]string, 0)
+	for k, v := range data {
+		result = append(result, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(result, ",")
+}
+
 func (c *CDService) reconcileStone(stone runtime.Object) error {
 	stoneBytes, err := json.Marshal(stone)
 	if err != nil {
 		return err
 	}
 	labels := make(map[string]string)
-	if err := json.Unmarshal([]byte(gjson.Get(string(stoneBytes), "metadata.labels").String()), labels); err != nil {
+	if err := json.Unmarshal([]byte(gjson.Get(string(stoneBytes), "metadata.labels").String()), &labels); err != nil {
 		return err
+	}
+
+	expectedUpdatedReplicas := gjson.Get(string(stoneBytes), "status.replicas").Int()
+	expectedImages := make([]string, 0)
+	gjson.Get(string(stoneBytes), "spec.template.spec").ForEach(func(key, value gjson.Result) bool {
+		c := &corev1.Container{}
+		if err := json.Unmarshal([]byte(value.String()), c); err != nil {
+			return false
+		}
+		expectedImages = append(expectedImages, c.Image)
+		return true
+	})
+
+	unstructuredPods, err := c.List(common.YceCloudExtensionsOps, k8s.Pod, "", 0, 0, labelsToQuery(labels))
+	if err != nil {
+		return err
+	}
+	if int64(len(unstructuredPods.Items)) != expectedUpdatedReplicas {
+		return fmt.Errorf(
+			"%s expected deploy or update replicas not match,waiting reconcile stone %s",
+			gjson.Get(string(stoneBytes), "metadata.name").String(),
+		)
+	}
+
+	deployDone := true
+	for _, item := range unstructuredPods.Items {
+		podBytes, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		if gjson.Get(string(podBytes), "status.phase").String() != "Running" {
+			deployDone = false
+		}
+	}
+
+	if !deployDone {
+		return nil
 	}
 
 	return nil
