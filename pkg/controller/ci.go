@@ -84,7 +84,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 			continue
 		}
 		if err := s.reconcile(ci); err != nil {
-			fmt.Printf("handle ci error (%s)", err)
+			fmt.Printf("%s handle ci error (%s)\n", common.ERROR, err)
 			continue
 		}
 	}
@@ -95,7 +95,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 
 	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.CI, ciList.GetResourceVersion(), 0, nil)
 	if err != nil {
-		return fmt.Errorf("watch error (%s)", err)
+		return fmt.Errorf("watch error (%s)\n", err)
 	}
 
 	for {
@@ -109,11 +109,11 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 			ci := &v1.CI{}
 			err := tools.RuntimeObjectToInstance(item.Object, ci)
 			if err != nil {
-				fmt.Printf("%s RuntimeObjectToInstance error (%s)", common.WARN, err)
+				fmt.Printf("%s RuntimeObjectToInstance error (%s)\n", common.WARN, err)
 				continue
 			}
 			if err := s.reconcile(ci); err != nil {
-				fmt.Printf("%s ci controller handle error (%s)", common.ERROR, err)
+				fmt.Printf("%s ci controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
 		}
@@ -121,6 +121,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 }
 
 func (s *CIController) Run(addr string, stop <-chan struct{}) error {
+	gin.SetMode("debug")
 	route := gin.New()
 	route.POST("/", func(g *gin.Context) {
 		// 接收到 echoer post 的请求数据
@@ -140,7 +141,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 			return
 		}
 
-		// {git_project_name}-{Branch}
+		// {git-project-name}-{Branch}
 		project, err := tools.ExtractProject(request.GitUrl)
 		var name = fmt.Sprintf("%s-%s", project, request.Branch)
 

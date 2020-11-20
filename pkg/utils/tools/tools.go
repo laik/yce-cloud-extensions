@@ -55,7 +55,7 @@ func ExtractProject(git string) (string, error) {
 	if len(_slice) < 1 {
 		return "", fmt.Errorf("git addr illegal (%s)", git)
 	}
-	return _slice[len(_slice)-1], nil
+	return strings.Replace(_slice[len(_slice)-1], "_", "-", -1), nil
 }
 
 // harbor.ym/devops/devops-taiyi-ui-k8s@sha256:fba94e0ce9ea241fa1047ea7f84b616093ff6a5d30d193bee2b3431f9e88d33c

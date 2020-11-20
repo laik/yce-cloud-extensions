@@ -129,6 +129,7 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 		return err
 	}
 
+	ci.Spec.AckStates = ci.Spec.AckStates[:0]
 	switch {
 	case conditions[0].Reason == succeeded && conditions[0].Status == "True" && conditions[0].Type == succeeded: // successed
 		ci.Spec.Done = true

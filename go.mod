@@ -3,20 +3,17 @@ module github.com/laik/yce-cloud-extensions
 go 1.15
 
 require (
-	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-resty/resty/v2 v2.3.0
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
-	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/onsi/ginkgo v1.12.3 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/tidwall/gjson v1.6.3
 	github.com/tidwall/sjson v1.1.2
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
-	golang.org/x/net v0.0.0-20201027133719-8eef5233e2a1 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
+	gopkg.in/yaml.v2 v2.3.0
 	k8s.io/api v0.19.3 // indirect
 	k8s.io/apimachinery v0.19.0
 	k8s.io/client-go v0.19.0

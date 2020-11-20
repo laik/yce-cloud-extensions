@@ -5,8 +5,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const RESOURCE_LIMIT_KEY = "nuwa.kubernetes.io/default_resource_limit"
-
 const stoneTpl = `kind: Stone
 apiVersion: nuwa.nip.io/v1
 metadata:

@@ -96,7 +96,7 @@ spec:
     outputs: []
   steps:
     - args:
-        - '--dockerfile=/workspace/git/Dockerfile.ci'
+        - '--dockerfile=/workspace/git/Dockerfile'
         - '--context=/workspace/git'
         - '--insecure'
         - '--force'
