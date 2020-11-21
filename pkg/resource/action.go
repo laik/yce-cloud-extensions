@@ -1,7 +1,5 @@
 package resource
 
-import v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
-
 type Request struct {
 	FlowId    string   `json:"flowId"`
 	StepName  string   `json:"stepName"`
@@ -28,16 +26,16 @@ type RequestCd struct {
 	UUID       string   `json:"uuid"`
 	RetryCount uint32   `json:"retryCount"`
 
-	ServiceName     string          `json:"serviceName"`
-	ServiceImage    string          `json:"serviceImage"`
-	DeployNamespace string          `json:"deployNamespace"`
-	ArtifactInfo    v1.ArtifactInfo `json:"artifactInfo"`
-	DeployType      string          `json:"DeployType"`
-	CPULimit        string          `json:"cpuLimit"`
-	MEMLimit        string          `json:"memLimit"`
-	CPURequests     string          `json:"cpuRequests"`
-	MEMRequests     string          `json:"memRequests"`
-	Replicas        uint32          `json:"replicas"`
+	ServiceName     string `json:"serviceName"`
+	ServiceImage    string `json:"serviceImage"`
+	DeployNamespace string `json:"deployNamespace"`
+	ArtifactInfo    string `json:"artifactInfo"`
+	DeployType      string `json:"DeployType"`
+	CPULimit        string `json:"cpuLimit"`
+	MEMLimit        string `json:"memLimit"`
+	CPURequests     string `json:"cpuRequests"`
+	MEMRequests     string `json:"memRequests"`
+	Replicas        uint32 `json:"replicas"`
 }
 
 type Response struct {

@@ -13,7 +13,6 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	"github.com/tidwall/gjson"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -31,7 +30,7 @@ func (c *CDService) Start(stop <-chan struct{}) {
 		fmt.Printf("%s watch cd resource error (%s)\n", common.ERROR, err)
 		return
 	}
-	stoneChan, err := c.Watch(common.YceCloudExtensions, k8s.Stone, "0", 0, nil)
+	stoneChan, err := c.Watch("", k8s.Stone, "0", 0, "yce-cloud-extensions")
 	if err != nil {
 		fmt.Printf("%s watch cd resource error (%s)\n", common.ERROR, err)
 		return
@@ -46,10 +45,11 @@ func (c *CDService) Start(stop <-chan struct{}) {
 				fmt.Printf("%s cd service watch stone resource channel stop\n", common.ERROR)
 				return
 			}
-			if stoneEvent.Type == watch.Added || stoneEvent.Type == watch.Modified {
-				if err := c.reconcileStone(stoneEvent.Object); err != nil {
-					fmt.Printf("%s reconcile stone error(%s)\n", common.ERROR, err)
-				}
+			if stoneEvent.Type == watch.Deleted {
+				continue
+			}
+			if err := c.reconcileStone(stoneEvent.Object); err != nil {
+				fmt.Printf("%s reconcile stone error(%s)\n", common.ERROR, err)
 			}
 		case item, ok := <-cdChan:
 			if !ok {
@@ -82,33 +82,36 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 	if err != nil {
 		return err
 	}
-	labels := make(map[string]string)
-	if err := json.Unmarshal([]byte(gjson.Get(string(stoneBytes), "metadata.labels").String()), &labels); err != nil {
-		return err
-	}
-
-	expectedUpdatedReplicas := gjson.Get(string(stoneBytes), "status.replicas").Int()
-	expectedImages := make([]string, 0)
-	gjson.Get(string(stoneBytes), "spec.template.spec").ForEach(func(key, value gjson.Result) bool {
-		c := &corev1.Container{}
-		if err := json.Unmarshal([]byte(value.String()), c); err != nil {
-			return false
-		}
-		expectedImages = append(expectedImages, c.Image)
-		return true
-	})
-
-	unstructuredPods, err := c.List(common.YceCloudExtensionsOps, k8s.Pod, "", 0, 0, labelsToQuery(labels))
-	if err != nil {
-		return err
-	}
-	if int64(len(unstructuredPods.Items)) != expectedUpdatedReplicas {
-		return fmt.Errorf(
-			"%s expected deploy or update replicas not match,waiting reconcile stone %s",
-			common.INFO,
-			gjson.Get(string(stoneBytes), "metadata.name").String(),
-		)
-	}
+	//labels := make(map[string]string)
+	//if err := json.Unmarshal([]byte(gjson.Get(string(stoneBytes), "metadata.labels").String()), &labels); err != nil {
+	//	return err
+	//}
+	//
+	//expectedUpdatedReplicas := gjson.Get(string(stoneBytes), "status.replicas").Int()
+	//expectedImages := make([]string, 0)
+	//gjson.Get(string(stoneBytes), "spec.template.spec").ForEach(func(key, value gjson.Result) bool {
+	//	c := &corev1.Container{}
+	//	if err := json.Unmarshal([]byte(value.String()), c); err != nil {
+	//		return false
+	//	}
+	//	expectedImages = append(expectedImages, c.Image)
+	//	return true
+	//})
+	//
+	//// need compare expectedImages
+	//
+	//unstructuredPods, err := c.List(common.YceCloudExtensionsOps, k8s.Pod, "", 0, 0, labelsToQuery(labels))
+	//if err != nil {
+	//	return err
+	//}
+	//if int64(len(unstructuredPods.Items)) != expectedUpdatedReplicas {
+	//	fmt.Printf(
+	//		"%s expected deploy or update replicas not match,waiting reconcile stone %s\n",
+	//		common.INFO,
+	//		gjson.Get(string(stoneBytes), "metadata.name").String(),
+	//	)
+	//	return nil
+	//}
 
 	//// Need stone condition state support
 	//deployDone := true
@@ -127,24 +130,39 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 	//	return nil
 	//}
 
-	name := gjson.Get(string(stoneBytes), "metadata.name").String()
-	unstructuredCD, err := c.Get(common.YceCloudExtensionsOps, name, k8s.CD)
+	var name = ""
+	gjson.Get(string(stoneBytes), "metadata.labels").ForEach(func(k, v gjson.Result) bool {
+		if k.String() != "yce-cloud-extensions" {
+			return true
+		}
+		name = v.String()
+		return false
+	})
+	if name == "" {
+		return nil
+	}
+	unstructuredCD, err := c.Get(common.YceCloudExtensions, k8s.CD, name)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	cd := &v1.CD{}
 	if err := tools.UnstructuredObjectToInstanceObj(unstructuredCD, cd); err != nil {
 		return err
 	}
+	if cd.Spec.Done {
+		return nil
+	}
+
 	cd.Spec.Done = true
+	cd.Spec.AckStates = []string{v1.SuccessState}
 
 	newUnstructuredCD, err := tools.InstanceToUnstructured(cd)
 	if err != nil {
 		return err
 	}
 
-	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.CD, name, newUnstructuredCD, false); err != nil {
+	if _, _, err := c.Apply(common.YceCloudExtensions, k8s.CD, name, newUnstructuredCD, false); err != nil {
 		return err
 	}
 
@@ -178,6 +196,7 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 	}
 
 	params := &params{
+		CDName:         cd.GetName(),
 		Namespace:      *cd.Spec.DeployNamespace,
 		Name:           *cd.Spec.ServiceName,
 		Image:          *cd.Spec.ServiceImage,

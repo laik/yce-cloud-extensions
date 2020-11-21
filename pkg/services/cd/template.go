@@ -12,6 +12,7 @@ metadata:
   labels:
     app: {{.Name}}
     app-uuid: {{.UUID}}
+    yce-cloud-extensions: {{.CDName}}
 spec:
   template:
     metadata:
@@ -79,6 +80,7 @@ type params struct {
 	ServiceType    string
 	UUID           string
 	Coordinates    []ResourceLimitStruct
+	CDName         string
 }
 
 type NamespaceResourceLimit struct {

@@ -128,11 +128,16 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			requestErr(g, err)
 			return
 		}
+		artifactInfo := &v1.ArtifactInfo{}
+		if err = json.Unmarshal([]byte(request.ArtifactInfo), artifactInfo); err != nil {
+			requestErr(g, err)
+			return
+		}
 
 		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
 		name = strings.ToLower(strings.Replace(name, "_", "-", -1))
 
-		// 构造一个CI的结构
+		// 构造一个CD的结构
 		cd := &v1.CD{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "CD",
@@ -146,7 +151,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 				ServiceName:     &request.ServiceName,
 				DeployNamespace: &request.DeployNamespace,
 				ServiceImage:    &request.ServiceImage,
-				ArtifactInfo:    request.ArtifactInfo,
+				ArtifactInfo:    *artifactInfo,
 				DeployType:      &request.DeployType,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,

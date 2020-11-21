@@ -37,6 +37,7 @@ func TestStoneConstructor(t *testing.T) {
 			},
 			Commands: []string{"start"},
 			Args:     []string{"abc"},
+			CDName:   "abc",
 		})
 	if err != nil {
 		t.Fatal(err)
@@ -50,6 +51,7 @@ metadata:
   labels:
     app: test1
     app-uuid: abc123
+    yce-cloud-extensions: abc
 spec:
   template:
     metadata:
