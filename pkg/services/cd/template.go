@@ -2,7 +2,6 @@ package cd
 
 import (
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
-	"gopkg.in/yaml.v2"
 )
 
 const stoneTpl = `kind: Stone
@@ -24,6 +23,18 @@ spec:
       containers:
         - name: {{.Name}}
           image: {{.Image}}
+          {{- if .Commands}}
+          command:
+          {{ range .Commands}}
+            - {{.}}
+          {{ end }}
+          {{- end }}
+          {{- if .Args}}
+          args:
+          {{ range .Args}}
+            - {{.}}
+          {{ end }}
+          {{- end }}
           resources:
             limits:
               cpu: {{.CpuLimit}}
@@ -33,7 +44,17 @@ spec:
               memory: {{.MemoryRequests}}
           imagePullPolicy: Always
   strategy: Release
-  {{.Coordinates}}
+  coordinates:
+{{range .Coordinates}}
+    - group: {{.Group}}
+      zoneset:
+{{range .ZoneSet}}
+        - zone: {{.Zone}}
+          rack: {{.Rack}}
+          host: {{.Host}}
+{{end}}
+      replicas: {{.Replicas}}
+{{end}}
   service:
     ports:
 {{range .ServicePorts}}
@@ -52,51 +73,49 @@ type params struct {
 	MemoryLimit    string
 	CpuRequests    string
 	MemoryRequests string
+	Commands       []string
+	Args           []string
 	ServicePorts   []v1.ServicePorts
 	ServiceType    string
 	UUID           string
-	Coordinates    string
+	Coordinates    []ResourceLimitStruct
 }
 
-type namespaceResourceLimit struct {
+type NamespaceResourceLimit struct {
 	Rack string `json:"rack"`
 	Host string `json:"host"`
 	Zone string `json:"zone"`
 }
 
-type namespaceResourceLimitSlice []namespaceResourceLimit
+type NamespaceResourceLimitSlice []NamespaceResourceLimit
 
-func (n *namespaceResourceLimitSlice) GroupBy() map[string][]namespaceResourceLimit {
-	result := make(map[string][]namespaceResourceLimit)
+func (n *NamespaceResourceLimitSlice) GroupBy() map[string][]NamespaceResourceLimit {
+	result := make(map[string][]NamespaceResourceLimit)
 	for _, v := range *n {
 		if result[v.Zone] == nil {
-			result[v.Zone] = make([]namespaceResourceLimit, 0)
+			result[v.Zone] = make([]NamespaceResourceLimit, 0)
 		}
 		result[v.Zone] = append(result[v.Zone], v)
 	}
 	return result
 }
 
-type resourceLimitStruct struct {
+type ResourceLimitStruct struct {
 	Group    string                   `json:"group" yaml:"group"`
-	ZoneSet  []namespaceResourceLimit `json:"zoneset" yaml:"zoneset"`
+	ZoneSet  []NamespaceResourceLimit `json:"zoneset" yaml:"zoneset"`
 	Replicas uint32                   `json:"replicas" yaml:"replicas"`
 }
 
-type resourceLimitStructSlice struct {
-	Coordinates []resourceLimitStruct `json:"coordinates" yaml:"coordinates"`
-}
-
-func createResourceLimitStructs(m map[string][]namespaceResourceLimit, replicas uint32) ([]byte, error) {
-	coordinates := make([]resourceLimitStruct, 0)
+func createResourceLimitStructs(m map[string][]NamespaceResourceLimit, replicas uint32) []ResourceLimitStruct {
+	coordinates := make([]ResourceLimitStruct, 0)
 	for k, v := range m {
 		coordinates = append(
 			coordinates,
-			resourceLimitStruct{
+			ResourceLimitStruct{
 				Group:    k,
 				ZoneSet:  v,
 				Replicas: replicas,
 			})
 	}
-	return yaml.Marshal(&resourceLimitStructSlice{coordinates})
+	return coordinates
 }

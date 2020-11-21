@@ -11,39 +11,55 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
-	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
+	servicescd "github.com/laik/yce-cloud-extensions/pkg/services/cd"
+	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
+	"strings"
 )
 
 type CDController struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
-	client.IClient
-	dataChannel chan *unstructured.Unstructured
+	httpclient.IClient
 	services.IService
 }
 
-func (s *CDController) Handle(addr string) {
-	panic("implement me")
+func (s *CDController) handle(cd *v1.CD) error {
+	resp := &resource.Response{
+		FlowId:   *cd.Spec.FlowId,
+		StepName: *cd.Spec.StepName,
+		AckState: cd.Spec.AckStates[0],
+		UUID:     *cd.Spec.UUID,
+		Done:     cd.Spec.Done,
+	}
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]interface{})
+	err = json.Unmarshal(respBytes, &data)
+	if err != nil {
+		return err
+	}
+
+	return s.response2echoer(data)
 }
 
-func (s *CDController) handle(cd *v1.CD) error {
-	if cd.Spec.Done {
-		return nil
+func (s *CDController) response2echoer(data map[string]interface{}) error {
+	request := s.Post(common.EchoerAddr)
+	for k, v := range data {
+		request.Params(k, v)
+	}
+	if err := request.Do(); err != nil {
+		return err
 	}
 	return nil
 }
 
 func (s *CDController) recv(stop <-chan struct{}) error {
-	gvr, err := s.GetGvr(k8s.CD)
-	if err != nil {
-		return err
-	}
-	_ = gvr
-
 	list, err := s.List(common.YceCloudExtensions, k8s.CD, "", 0, 0, nil)
 	if err != nil {
 		return err
@@ -53,11 +69,11 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 		value := item
 		cd := &v1.CD{}
 		if err := tools.UnstructuredObjectToInstanceObj(&value, cd); err != nil {
-			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
+			fmt.Printf("%s UnstructuredObjectToInstanceObj error (%s)\n", common.ERROR, err)
 			continue
 		}
 		if err := s.handle(cd); err != nil {
-			fmt.Printf("handle ci error (%s)", err)
+			fmt.Printf("%s handle cd error (%s)\n", common.ERROR, err)
 			continue
 		}
 	}
@@ -68,7 +84,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 
 	eventChan, err := s.Watch(common.YceCloudExtensions, k8s.CD, cdList.GetResourceVersion(), 0, nil)
 	if err != nil {
-		return fmt.Errorf("watch error (%s)", err)
+		return fmt.Errorf("%s watch error (%s)\n", common.ERROR, err)
 	}
 
 	for {
@@ -82,11 +98,11 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 			cd := &v1.CD{}
 			err := tools.RuntimeObjectToInstance(item.Object, cd)
 			if err != nil {
-				fmt.Printf("RuntimeObjectToInstance error (%s) (%v)", err, item.Object)
+				fmt.Printf("%s RuntimeObjectToInstance error (%s)\n", common.ERROR, err)
 				continue
 			}
 			if err := s.handle(cd); err != nil {
-				fmt.Printf("cd controller handle error (%s) (%v)", err, item.Object)
+				fmt.Printf("%s cd controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
 		}
@@ -113,9 +129,8 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			return
 		}
 
-		// {git_project_name}-{Branch}
-		project, err := tools.ExtractService(request.ServiceName)
-		var name = fmt.Sprintf("%s-%s", project, request.DeployType)
+		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
+		name = strings.ToLower(strings.Replace(name, "_", "-", -1))
 
 		// 构造一个CI的结构
 		cd := &v1.CD{
@@ -133,6 +148,11 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    request.ArtifactInfo,
 				DeployType:      &request.DeployType,
+				CPULimit:        &request.CPULimit,
+				MEMLimit:        &request.MEMLimit,
+				CPURequests:     &request.CPURequests,
+				MEMRequests:     &request.MEMRequests,
+				Replicas:        request.Replicas,
 				FlowId:          &request.FlowId,
 				StepName:        &request.StepName,
 				AckStates:       request.AckStates,
@@ -147,7 +167,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			return
 		}
 		// 写入CRD配置
-		obj, _, err := s.Apply(common.YceCloudExtensions, k8s.CD, name, unstructured)
+		obj, _, err := s.Apply(common.YceCloudExtensions, k8s.CD, name, unstructured, true)
 		if err != nil {
 			internalApplyErr(g, err)
 			return
@@ -163,8 +183,11 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 }
 
 func NewCDController(cfg *configure.InstallConfigure) Interface {
+	drs := datasource.NewIDataSource(cfg)
 	return &CDController{
 		InstallConfigure: cfg,
+		IService:         servicescd.NewCDService(cfg, drs),
 		IDataSource:      datasource.NewIDataSource(cfg),
+		IClient:          httpclient.NewIClient(),
 	}
 }

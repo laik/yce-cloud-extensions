@@ -20,7 +20,10 @@ func needInit() (*configure.InstallConfigure, error) {
 	return cfg, nil
 }
 
+var addr = "0.0.0.0:8080"
+
 func main() {
+	flag.StringVar(&addr, "addr", "listen address", "-addr 0.0.0.0:8080")
 	flag.Parse()
 	cfg, err := needInit()
 	if err != nil {
@@ -29,7 +32,7 @@ func main() {
 
 	srv := ctl.NewCIController(cfg)
 	stop := make(chan struct{})
-	if err := srv.Run(":8080", stop); err != nil {
+	if err := srv.Run(addr, stop); err != nil {
 		panic(err)
 	}
 }

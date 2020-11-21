@@ -33,6 +33,11 @@ type RequestCd struct {
 	DeployNamespace string          `json:"deployNamespace"`
 	ArtifactInfo    v1.ArtifactInfo `json:"artifactInfo"`
 	DeployType      string          `json:"DeployType"`
+	CPULimit        string          `json:"cpuLimit"`
+	MEMLimit        string          `json:"memLimit"`
+	CPURequests     string          `json:"cpuRequests"`
+	MEMRequests     string          `json:"memRequests"`
+	Replicas        uint32          `json:"replicas"`
 }
 
 type Response struct {

@@ -62,7 +62,7 @@ func (c *CDService) Start(stop <-chan struct{}) {
 				continue
 			}
 			if err := c.reconcileCD(cd); err != nil {
-				fmt.Printf("reconcile cd handle error (%s)\n", err)
+				fmt.Printf("%s reconcile cd handle error (%s)\n", common.ERROR, err)
 				continue
 			}
 		}
@@ -105,23 +105,47 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 	if int64(len(unstructuredPods.Items)) != expectedUpdatedReplicas {
 		return fmt.Errorf(
 			"%s expected deploy or update replicas not match,waiting reconcile stone %s",
+			common.INFO,
 			gjson.Get(string(stoneBytes), "metadata.name").String(),
 		)
 	}
 
-	deployDone := true
-	for _, item := range unstructuredPods.Items {
-		podBytes, err := json.Marshal(item)
-		if err != nil {
-			return err
-		}
-		if gjson.Get(string(podBytes), "status.phase").String() != "Running" {
-			deployDone = false
-		}
+	//// Need stone condition state support
+	//deployDone := true
+	//for _, item := range unstructuredPods.Items {
+	//	podBytes, err := json.Marshal(item)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if gjson.Get(string(podBytes), "status.phase").String() != "Running" {
+	//		deployDone = false
+	//	}
+	//}
+	//
+	//// if the deploy task not done, wait next event
+	//if !deployDone {
+	//	return nil
+	//}
+
+	name := gjson.Get(string(stoneBytes), "metadata.name").String()
+	unstructuredCD, err := c.Get(common.YceCloudExtensionsOps, name, k8s.CD)
+	if err != nil {
+		return err
 	}
 
-	if !deployDone {
-		return nil
+	cd := &v1.CD{}
+	if err := tools.UnstructuredObjectToInstanceObj(unstructuredCD, cd); err != nil {
+		return err
+	}
+	cd.Spec.Done = true
+
+	newUnstructuredCD, err := tools.InstanceToUnstructured(cd)
+	if err != nil {
+		return err
+	}
+
+	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.CD, name, newUnstructuredCD, false); err != nil {
+		return err
 	}
 
 	return nil
@@ -136,12 +160,15 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 	if err != nil {
 		return err
 	}
-	resourceLimitContent := gjson.Get(string(namespaceBytes), "metadata.annotations.nuwa.kubernetes.io/default_resource_limit").String()
+	resourceLimitContent := gjson.Get(string(namespaceBytes), `metadata.annotations.nuwa\.kubernetes\.io\/default_resource_limit`).String()
 	if resourceLimitContent == "" {
-		return fmt.Errorf("namespace (%s) not allow workload node", *cd.Spec.DeployNamespace)
+		return fmt.Errorf("namespace (%s) not allow workload node for deploy (%s)",
+			*cd.Spec.DeployNamespace,
+			fmt.Sprintf(`{"namespace"":"%s","app"":"%s"}`, *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
+		)
 	}
 
-	namespaceResourceLimitSlice := make(namespaceResourceLimitSlice, 0)
+	namespaceResourceLimitSlice := make(NamespaceResourceLimitSlice, 0)
 	if err := json.Unmarshal([]byte(resourceLimitContent), &namespaceResourceLimitSlice); err != nil {
 		return fmt.Errorf(
 			"namespace (%s) not allow workload node because don't unmarshal content (%s)",
@@ -150,36 +177,32 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 		)
 	}
 
-	resourceLimitStructsBytes, err := createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas)
-	if err != nil {
-		return err
-	}
-
 	params := &params{
 		Namespace:      *cd.Spec.DeployNamespace,
 		Name:           *cd.Spec.ServiceName,
 		Image:          *cd.Spec.ServiceImage,
 		CpuLimit:       *cd.Spec.CPULimit,
-		MemoryLimit:    *cd.Spec.MEMRequests,
+		MemoryLimit:    *cd.Spec.MEMLimit,
 		CpuRequests:    *cd.Spec.CPURequests,
 		MemoryRequests: *cd.Spec.MEMRequests,
+		Commands:       cd.Spec.ArtifactInfo.Command,
+		Args:           cd.Spec.ArtifactInfo.Arguments,
 		ServicePorts:   cd.Spec.ArtifactInfo.ServicePorts,
 		ServiceType:    "ClusterIP",
-		Coordinates:    string(resourceLimitStructsBytes),
+		Coordinates:    createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
 		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
 	unstructuredStone, err := services.Render(params, stoneTpl)
 	if err != nil {
-		return err
+		return fmt.Errorf("render error (%s)", err)
 	}
 
-	obj, _, err := c.Apply(cd.Namespace, k8s.Stone, cd.Name, unstructuredStone)
+	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, false)
 	if err != nil {
-		fmt.Printf("%s stone apply error (%s)", common.ERROR, err)
+		fmt.Printf("%s stone apply error (%s)\n", common.ERROR, err)
 		return err
 	}
-	_ = obj
 
 	return nil
 }

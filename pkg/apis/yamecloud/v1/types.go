@@ -70,9 +70,9 @@ type CDSpec struct {
 }
 
 type ArtifactInfo struct {
-	Command      string         `json:"command"`
-	Arguments    string         `json:"arguments"`
-	ServicePorts []ServicePorts `json:"service_ports"`
+	Command      []string       `json:"command"`
+	Arguments    []string       `json:"arguments"`
+	ServicePorts []ServicePorts `json:"servicePorts"`
 }
 
 type ServicePorts struct {

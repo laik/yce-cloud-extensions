@@ -16,7 +16,6 @@ import (
 	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
 )
 
@@ -24,7 +23,6 @@ type CIController struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
 	client.IClient
-	dataChannel chan *unstructured.Unstructured
 	services.IService
 }
 
@@ -175,7 +173,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 			return
 		}
 		// 写入CRD配置
-		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, unstructured)
+		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, unstructured, true)
 		if err != nil {
 			internalApplyErr(g, err)
 			return

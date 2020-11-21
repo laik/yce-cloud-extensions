@@ -14,35 +14,34 @@ var tt = template.New("template")
 func TestStoneConstructor(t *testing.T) {
 	o := &services.Output{}
 	tt = template.Must(tt.Parse(stoneTpl))
-	if err := tt.Execute(o, &params{
-		Namespace:      "ns",
-		Name:           "test1",
-		Image:          "abc",
-		CpuLimit:       "100m",
-		MemoryLimit:    "30m",
-		CpuRequests:    "1000m",
-		MemoryRequests: "300m",
-		ServicePorts: []v1.ServicePorts{
-			{Name: "port", Protocol: "TCP", Port: 80, TargetPort: 80},
-		},
-		ServiceType: "ClusterIP",
-		UUID:        "abc123",
-		Coordinates: `  coordinates:
-    - group: B
-      zoneset:
-        - zone: B
-          rack: W-01
-          host: node3
-        - zone: B
-          rack: S-05
-          host: node2
-        - zone: B
-          rack: S-02
-          host: node4
-      replicas: 1`,
-	}); err != nil {
+	err := tt.Execute(o,
+		&params{
+			Namespace:      "ns",
+			Name:           "test1",
+			Image:          "abc",
+			CpuLimit:       "100m",
+			MemoryLimit:    "30m",
+			CpuRequests:    "1000m",
+			MemoryRequests: "300m",
+			ServicePorts: []v1.ServicePorts{
+				{Name: "port", Protocol: "TCP", Port: 80, TargetPort: 80},
+			},
+			ServiceType: "ClusterIP",
+			UUID:        "abc123",
+			Coordinates: []ResourceLimitStruct{
+				{Group: "B", Replicas: 1, ZoneSet: []NamespaceResourceLimit{
+					{Rack: "W-01", Host: "node3", Zone: "B"},
+					{Rack: "S-05", Host: "node2", Zone: "B"},
+					{Rack: "S-02", Host: "node4", Zone: "B"},
+				}},
+			},
+			Commands: []string{"start"},
+			Args:     []string{"abc"},
+		})
+	if err != nil {
 		t.Fatal(err)
 	}
+
 	expected := `kind: Stone
 apiVersion: nuwa.nip.io/v1
 metadata:
@@ -62,6 +61,10 @@ spec:
       containers:
         - name: test1
           image: abc
+          command:
+            - 'start'
+          args:
+            - 'abc'
           resources:
             limits:
               cpu: 100m
@@ -93,7 +96,7 @@ spec:
     type: ClusterIP`
 
 	src, dest := make(map[string]interface{}), make(map[string]interface{})
-	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal([]byte(expected), dest); err != nil || err1 != nil {
+	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal(o.Data, dest); err != nil || err1 != nil {
 		if err != nil {
 			t.Fatal(err)
 		}

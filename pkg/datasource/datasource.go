@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"context"
+	"fmt"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/util/retry"
 	"reflect"
+	"time"
 )
 
 var _ IDataSource = &IDataSourceImpl{}
@@ -17,7 +19,7 @@ var _ IDataSource = &IDataSourceImpl{}
 type IDataSource interface {
 	List(namespace, resource, flag string, pos, size int64, selector interface{}) (*unstructured.UnstructuredList, error)
 	Get(namespace, resource, name string, subresources ...string) (*unstructured.Unstructured, error)
-	Apply(namespace, resource, name string, obj *unstructured.Unstructured) (*unstructured.Unstructured, bool, error)
+	Apply(namespace, resource, name string, obj *unstructured.Unstructured, forceUpdate bool) (*unstructured.Unstructured, bool, error)
 	Delete(namespace, resource, name string) error
 	Watch(namespace string, resource, resourceVersion string, timeoutSeconds int64, selector interface{}) (<-chan watch.Event, error)
 }
@@ -85,7 +87,7 @@ func (i *IDataSourceImpl) Get(namespace, resource, name string, subresources ...
 	return object, nil
 }
 
-func (i *IDataSourceImpl) Apply(namespace, resource, name string, obj *unstructured.Unstructured) (result *unstructured.Unstructured, isUpdate bool, err error) {
+func (i *IDataSourceImpl) Apply(namespace, resource, name string, obj *unstructured.Unstructured, forceUpdate bool) (result *unstructured.Unstructured, isUpdate bool, err error) {
 	retryErr := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		gvr, err := i.GetGvr(resource)
 		if err != nil {
@@ -112,7 +114,7 @@ func (i *IDataSourceImpl) Apply(namespace, resource, name string, obj *unstructu
 			return getErr
 		}
 
-		compareObject(getObj, obj)
+		compareObject(getObj, obj, forceUpdate)
 
 		newObj, updateErr := i.CacheInformerFactory.
 			Interface.
@@ -184,7 +186,7 @@ func (i *IDataSourceImpl) Watch(namespace string, resource, resourceVersion stri
 	return recv.ResultChan(), nil
 }
 
-func compareObject(getObj, obj *unstructured.Unstructured) {
+func compareObject(getObj, obj *unstructured.Unstructured, forceUpdate bool) {
 	if !reflect.DeepEqual(getObj.Object["metadata"], obj.Object["metadata"]) {
 		getObj.Object["metadata"] = compareMetadataLabelsOrAnnotation(
 			getObj.Object["metadata"].(map[string]interface{}),
@@ -192,6 +194,24 @@ func compareObject(getObj, obj *unstructured.Unstructured) {
 		)
 	}
 
+	if forceUpdate {
+		metadata := getObj.Object["metadata"].(map[string]interface{})
+		if metadata == nil {
+			goto NEXT0
+		}
+
+		annotations, exist := metadata["annotations"]
+		if !exist {
+			annotations = make(map[string]interface{})
+		}
+
+		annotationsMap := annotations.(map[string]interface{})
+		annotationsMap["forceUpdate"] = fmt.Sprintf("%d", time.Now().Unix())
+		metadata["annotations"] = annotationsMap
+		getObj.Object["metadata"] = metadata
+	}
+
+NEXT0:
 	if !reflect.DeepEqual(getObj.Object["spec"], obj.Object["spec"]) {
 		getObj.Object["spec"] = obj.Object["spec"]
 	}

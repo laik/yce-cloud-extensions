@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
@@ -112,11 +113,6 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 	}
 
 	if len(conditions) < 1 {
-		fmt.Printf("%s reconcile pipelinerun (%s) not status.condistions real data (%s) \n",
-			common.INFO,
-			pipelineRunName,
-			gjson.Get(pipelineRunJSONString, "status"),
-		)
 		return nil
 	}
 
@@ -143,7 +139,7 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 	if err != nil {
 		return err
 	}
-	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.CI, pipelineRunName, ciUnstructured); err != nil {
+	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.CI, pipelineRunName, ciUnstructured, false); err != nil {
 		return err
 	}
 
@@ -233,7 +229,7 @@ func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, 
 		return nil, err
 	}
 	if !errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonDockerConfigName, defaultConfig)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonDockerConfigName, defaultConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -241,7 +237,7 @@ func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, 
 	}
 
 	if !tools.CompareSpecByUnstructured(defaultConfig, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonDockerConfigName, defaultConfig)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonDockerConfigName, defaultConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +276,7 @@ func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, 
 		if err := serviceAccount.UnmarshalJSON([]byte(newServiceAccountString)); err != nil {
 			return nil, err
 		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount, false)
 		if err != nil {
 			return nil, err
 		}
@@ -305,7 +301,7 @@ func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error
 		return nil, err
 	}
 	if !errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonGitConfigName, defaultConfig)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonGitConfigName, defaultConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -313,7 +309,7 @@ func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error
 	}
 
 	if !tools.CompareSpecByUnstructured(defaultConfig, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonGitConfigName, defaultConfig)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonConfig, services.TektonGitConfigName, defaultConfig, false)
 		if err != nil {
 			return nil, err
 		}
@@ -352,7 +348,7 @@ func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error
 		if err := serviceAccount.UnmarshalJSON([]byte(newServiceAccountString)); err != nil {
 			return nil, err
 		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.ServiceAccount, serverAccount.GetName(), serviceAccount, false)
 		if err != nil {
 			return nil, err
 		}
@@ -373,7 +369,7 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	if !errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask, false)
 		if err != nil {
 			return nil, err
 		}
@@ -381,7 +377,7 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 	}
 
 	if !tools.CompareSpecByUnstructured(defaultTask, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask, false)
 		if err != nil {
 			return nil, err
 		}
@@ -403,7 +399,7 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 	}
 
 	if errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj, false)
 		if err != nil {
 			return nil, err
 		}
@@ -415,7 +411,7 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 	}
 
 	if !tools.CompareSpecByUnstructured(obj, getObj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj, false)
 		if err != nil {
 			return nil, err
 		}
@@ -458,7 +454,7 @@ func (c *Service) checkAndRecreatePipelineRun(
 		if err != nil {
 			return nil, err
 		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, obj)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, obj, false)
 		if err != nil {
 			return nil, err
 		}
@@ -477,7 +473,7 @@ func (c *Service) checkAndRecreatePipelineRun(
 		if err != nil {
 			return nil, err
 		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, clonePipelineRunObject)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, clonePipelineRunObject, false)
 		if err != nil {
 			return nil, err
 		}
@@ -499,7 +495,7 @@ OWNER_REF:
 		return nil, err
 	}
 
-	pipelineRunGraphObj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, pipelineRunGraphName, pipelineRunGraphObj)
+	pipelineRunGraphObj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, pipelineRunGraphName, pipelineRunGraphObj, false)
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +512,7 @@ func (c *Service) checkAndRecreateGraph(name string) (*unstructured.Unstructured
 	if err != nil {
 		return nil, err
 	}
-	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, name, obj)
+	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, name, obj, false)
 	if err != nil {
 		return nil, err
 	}
@@ -534,7 +530,7 @@ func (c *Service) checkAndRecreatePipelineResource(name, gitUrl, branch string) 
 	if err != nil {
 		return nil, err
 	}
-	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineResource, name, obj)
+	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineResource, name, obj, false)
 	if err != nil {
 		return nil, err
 	}

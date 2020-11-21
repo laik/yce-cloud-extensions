@@ -17,14 +17,24 @@ spec:
               properties:
                 serviceName:
                   type: string
+                serviceImage:
+                  type: string
                 deployNamespace:
                   type: string
                 artifactInfo:
                   type: object
-                retryCount:
-                  type: integer
                 deployType:
                   type: string
+                cpuLimit:
+                  type: string
+                memLimit:
+                  type: string
+                cpuRequests:
+                  type: string
+                memRequests:
+                  type: string
+                replicas:
+                  type: integer
                 flowId:
                   type: string
                 stepName:
@@ -45,9 +55,6 @@ spec:
         - name: DeployNamespace
           type: string
           jsonPath: .spec.deployNamespace
-        - name: RetryCount
-          type: string
-          jsonPath: .spec.retryCount
         - name: DeployType
           type: string
           jsonPath: .spec.deployType

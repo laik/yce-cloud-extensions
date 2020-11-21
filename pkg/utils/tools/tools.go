@@ -3,6 +3,8 @@ package tools
 import (
 	"encoding/json"
 	"fmt"
+	gyaml "github.com/ghodss/yaml"
+	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,7 +57,7 @@ func ExtractProject(git string) (string, error) {
 	if len(_slice) < 1 {
 		return "", fmt.Errorf("git addr illegal (%s)", git)
 	}
-	return strings.Replace(_slice[len(_slice)-1], "_", "-", -1), nil
+	return strings.ToLower(strings.Replace(_slice[len(_slice)-1], "_", "-", -1)), nil
 }
 
 // harbor.ym/devops/devops-taiyi-ui-k8s@sha256:fba94e0ce9ea241fa1047ea7f84b616093ff6a5d30d193bee2b3431f9e88d33c
@@ -164,4 +166,24 @@ func SetObjectOwner(object []byte, apiVersion, kind, name, uid string) (*unstruc
 	}
 
 	return &unstructured.Unstructured{Object: obj}, nil
+}
+
+func SetYamlValue(yamlData []byte, path string, value interface{}) ([]byte, error) {
+	jsonData, err := gyaml.YAMLToJSON(yamlData)
+	if err != nil {
+		return []byte(""), err
+	}
+	j, err := sjson.Set(string(jsonData), path, value)
+	if err != nil {
+		return []byte(""), err
+	}
+	return gyaml.JSONToYAML([]byte(j))
+}
+
+func GetYamlValue(yamlData []byte, path string) (gjson.Result, error) {
+	jsonData, err := gyaml.YAMLToJSON(yamlData)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	return gjson.Get(string(jsonData), path), nil
 }
