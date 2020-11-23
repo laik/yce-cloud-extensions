@@ -219,7 +219,6 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 
 	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, false)
 	if err != nil {
-		fmt.Printf("%s stone apply error (%s)\n", common.ERROR, err)
 		return err
 	}
 

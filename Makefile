@@ -1,4 +1,4 @@
-all: code-gen build-ci build-cd
+all: build-ci build-cd
 
 code-gen:
 	@bash ./hack/code-generator/generate-groups.sh "deepcopy" \
