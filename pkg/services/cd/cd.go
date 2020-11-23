@@ -172,7 +172,11 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 func (c *CDService) reconcileCD(cd *v1.CD) error {
 	unstructuredNamespace, err := c.Get("", k8s.Namespace, *cd.Spec.DeployNamespace)
 	if err != nil {
-		return err
+		return fmt.Errorf("reconcile cd (%s) can't not get deploy namespace (%s) error (%s)",
+			cd.Name,
+			*cd.Spec.DeployNamespace,
+			err,
+		)
 	}
 	namespaceBytes, err := json.Marshal(unstructuredNamespace.Object)
 	if err != nil {
@@ -219,7 +223,7 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 
 	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s stone apply error (%s)\n", common.ERROR, err)
 	}
 
 	return nil
