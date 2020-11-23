@@ -16,12 +16,12 @@ RUN go mod download
 ADD . .
 
 # Build
-RUN GOOS=linux GOARCH=amd64 go build -a --ldflags "-extldflags -static"  -o ci cmd/ci/*.go
+RUN GOOS=linux GOARCH=amd64 go build -a --ldflags "-extldflags -static"  -o build/ci cmd/ci/*.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM alpine:latest
 WORKDIR /
-COPY --from=builder /workspace/ci .
+COPY --from=builder /workspace/build/ci .
 
 ENTRYPOINT ["./ci"]
