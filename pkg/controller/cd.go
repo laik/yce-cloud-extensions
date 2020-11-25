@@ -130,7 +130,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 		}
 
 		artifactInfo := &v1.ArtifactInfo{}
-		if len(request.ArtifactInfo) < 1 {
+		if len(request.ArtifactInfo) > 0 {
 			if err = json.Unmarshal([]byte(request.ArtifactInfo), artifactInfo); err != nil {
 				requestErr(g, err)
 				return
