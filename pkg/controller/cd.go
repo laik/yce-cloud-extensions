@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type CDController struct {
@@ -24,6 +25,7 @@ type CDController struct {
 	datasource.IDataSource
 	httpclient.IClient
 	services.IService
+	lastVersion string
 }
 
 func (s *CDController) handle(cd *v1.CD) error {
@@ -77,14 +79,18 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 			continue
 		}
 	}
+
 	cdList := &v1.CDList{}
 	if err := tools.UnstructuredListObjectToInstanceObjectList(list, cdList); err != nil {
 		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
 	}
 
+RETRY:
 	eventChan, err := s.Watch(common.YceCloudExtensions, k8s.CD, cdList.GetResourceVersion(), 0, nil)
 	if err != nil {
-		return fmt.Errorf("%s watch error (%s)\n", common.ERROR, err)
+		fmt.Printf("%s watch error (%s)\n", common.ERROR, err)
+		time.Sleep(1 * time.Second)
+		goto RETRY
 	}
 
 	for {
@@ -93,7 +99,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 			return nil
 		case item, ok := <-eventChan:
 			if !ok {
-				return nil
+				goto RETRY
 			}
 			cd := &v1.CD{}
 			err := tools.RuntimeObjectToInstance(item.Object, cd)
@@ -105,6 +111,7 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 				fmt.Printf("%s cd controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
+			s.lastVersion = cd.GetResourceVersion()
 		}
 	}
 }

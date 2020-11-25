@@ -17,6 +17,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
+	"time"
 )
 
 type CIController struct {
@@ -24,6 +25,7 @@ type CIController struct {
 	datasource.IDataSource
 	client.IClient
 	services.IService
+	lastVersion string
 }
 
 func (s *CIController) response2echoer(data map[string]interface{}) error {
@@ -39,6 +41,9 @@ func (s *CIController) response2echoer(data map[string]interface{}) error {
 
 func (s *CIController) reconcile(ci *v1.CI) error {
 	if !ci.Spec.Done {
+		return nil
+	}
+	if len(ci.Spec.AckStates) == 0 {
 		return nil
 	}
 	resp := &resource.Response{
@@ -63,12 +68,6 @@ func (s *CIController) reconcile(ci *v1.CI) error {
 }
 
 func (s *CIController) recv(stop <-chan struct{}) error {
-	gvr, err := s.GetGvr(k8s.CI)
-	if err != nil {
-		return err
-	}
-	_ = gvr
-
 	list, err := s.List(common.YceCloudExtensionsOps, k8s.CI, "", 0, 0, nil)
 	if err != nil {
 		return err
@@ -91,9 +90,12 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
 	}
 
+RETRY:
 	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.CI, ciList.GetResourceVersion(), 0, nil)
 	if err != nil {
-		return fmt.Errorf("watch error (%s)\n", err)
+		fmt.Printf("watch error (%s)\n", err)
+		time.Sleep(1 * time.Second)
+		goto RETRY
 	}
 
 	for {
@@ -102,7 +104,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 			return nil
 		case item, ok := <-eventChan:
 			if !ok {
-				return nil
+				goto RETRY
 			}
 			ci := &v1.CI{}
 			err := tools.RuntimeObjectToInstance(item.Object, ci)
@@ -114,6 +116,7 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 				fmt.Printf("%s ci controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
+			s.lastVersion = ci.GetResourceVersion()
 		}
 	}
 }
