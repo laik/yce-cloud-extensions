@@ -128,10 +128,13 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 			requestErr(g, err)
 			return
 		}
+
 		artifactInfo := &v1.ArtifactInfo{}
-		if err = json.Unmarshal([]byte(request.ArtifactInfo), artifactInfo); err != nil {
-			requestErr(g, err)
-			return
+		if len(request.ArtifactInfo) < 1 {
+			if err = json.Unmarshal([]byte(request.ArtifactInfo), artifactInfo); err != nil {
+				requestErr(g, err)
+				return
+			}
 		}
 
 		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
