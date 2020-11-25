@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
@@ -25,24 +26,33 @@ var _ services.IService = &Service{}
 type Service struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
+	lastPRVersion string
+	lastCIVersion string
 }
 
 func NewService(cfg *configure.InstallConfigure, drs datasource.IDataSource) services.IService {
 	return &Service{
 		InstallConfigure: cfg,
 		IDataSource:      drs,
+		lastPRVersion:    "0",
+		lastCIVersion:    "0",
 	}
 }
 
 func (c *Service) Start(stop <-chan struct{}) {
-	pipelineRunChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.PipelineRun, "0", 0, nil)
+RETRY:
+	pipelineRunChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.PipelineRun, c.lastPRVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
+		time.Sleep(1 * time.Second)
+		goto RETRY
 	}
 
-	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, "0", 0, nil)
+	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, c.lastCIVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch ciChan error (%s)\n", common.ERROR, err)
+		time.Sleep(1 * time.Second)
+		goto RETRY
 	}
 	for {
 		select {
@@ -51,7 +61,7 @@ func (c *Service) Start(stop <-chan struct{}) {
 		case pipelineRunEvent, ok := <-pipelineRunChan:
 			if !ok {
 				fmt.Printf("%s pipeline run channel closed\n", common.ERROR)
-				return
+				goto RETRY
 			}
 			if pipelineRunEvent.Type == watch.Deleted {
 				continue
@@ -59,10 +69,18 @@ func (c *Service) Start(stop <-chan struct{}) {
 			if err := c.reconcilePipelineRun(pipelineRunEvent.Object); err != nil {
 				fmt.Printf("%s pipeline run channel recv handle error (%s)\n", common.ERROR, err)
 			}
+			// record watch version
+			result, err := tools.GetObjectValue(pipelineRunEvent.Object, "metadata.resourceVersion")
+			if err != nil {
+				fmt.Printf("%s cd service watch pipelinerun resource version not found\n", common.ERROR)
+				continue
+			}
+			c.lastPRVersion = result.String()
+
 		case ciEvent, ok := <-ciChan:
 			if !ok {
 				fmt.Printf("%s ci channel closed\n", common.ERROR)
-				return
+				goto RETRY
 			}
 			// ignore delete event
 			if ciEvent.Type == watch.Deleted {
@@ -75,6 +93,7 @@ func (c *Service) Start(stop <-chan struct{}) {
 			if err := c.reconcileCI(ciObj); err != nil {
 				fmt.Printf("%s ci channel reconcil error (%s)\n", common.ERROR, err)
 			}
+			c.lastCIVersion = ciObj.GetResourceVersion()
 		}
 	}
 }

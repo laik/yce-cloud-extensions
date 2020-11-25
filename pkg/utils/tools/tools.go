@@ -187,3 +187,14 @@ func GetYamlValue(yamlData []byte, path string) (gjson.Result, error) {
 	}
 	return gjson.Get(string(jsonData), path), nil
 }
+
+type Result = gjson.Result
+
+func GetObjectValue(object interface{}, path string) (*Result, error) {
+	bytesValue, err := json.Marshal(object)
+	if err != nil {
+		return nil, err
+	}
+	result := gjson.Get(string(bytesValue), path)
+	return &result, nil
+}
