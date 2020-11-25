@@ -449,57 +449,52 @@ func (c *Service) checkAndRecreatePipelineRun(
 	pipelineRunGraph *unstructured.Unstructured,
 
 ) (*unstructured.Unstructured, error) {
-	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
-	if errors.IsNotFound(err) {
-		// create pipelineRun
-		_outputUrl := services.DestRepoUrl
-		if outputUrl != "" {
-			_outputUrl = outputUrl
-		}
-		pipelineRunParams := params{
-			Namespace:            common.YceCloudExtensionsOps,
-			Name:                 name,
-			PipelineName:         services.PipelineName,
-			PipelineGraph:        services.PipelineGraphName,
-			PipelineRunGraph:     pipelineRunGraphName,
-			PipelineResourceName: pipelineResourceName,
-			ProjectName:          projectName,
-			ProjectVersion:       projectVersion,
-			BuildToolImage:       services.BuildToolImage,
-			DestRepoUrl:          _outputUrl,
-			CacheRepoUrl:         services.CacheRepoUrl,
-		}
-		obj, err = services.Render(pipelineRunParams, pipelineRunTpl)
-		if err != nil {
-			return nil, err
-		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, obj, false)
-		if err != nil {
-			return nil, err
-		}
-		goto OWNER_REF
+	_outputUrl := services.DestRepoUrl
+	if outputUrl != "" {
+		_outputUrl = outputUrl
 	}
-
-	// other err
+	pipelineRunParams := params{
+		Namespace:            common.YceCloudExtensionsOps,
+		Name:                 name,
+		PipelineName:         services.PipelineName,
+		PipelineGraph:        services.PipelineGraphName,
+		PipelineRunGraph:     pipelineRunGraphName,
+		PipelineResourceName: pipelineResourceName,
+		ProjectName:          projectName,
+		ProjectVersion:       projectVersion,
+		BuildToolImage:       services.BuildToolImage,
+		DestRepoUrl:          _outputUrl,
+		CacheRepoUrl:         services.CacheRepoUrl,
+	}
+	defaultObj, err := services.Render(pipelineRunParams, pipelineRunTpl)
 	if err != nil {
 		return nil, err
-	} else {
-		clonePipelineRunObject, err := tools.CloneNewObject(obj)
-		if err != nil {
-			return nil, err
+	}
+
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// create pipelineRun
+			obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
+			if err != nil {
+				return nil, err
+			}
+			goto OWNER_REF
 		}
-		err = c.Delete(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
-		if err != nil {
-			return nil, err
-		}
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, clonePipelineRunObject, false)
-		if err != nil {
-			return nil, err
-		}
-		pipelineRunGraph, err = c.checkAndRecreateGraph(pipelineRunGraph.GetName())
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
+
+	err = c.Delete(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
+	if err != nil {
+		return nil, err
+	}
+	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
+	if err != nil {
+		return nil, err
+	}
+	pipelineRunGraph, err = c.checkAndRecreateGraph(pipelineRunGraph.GetName())
+	if err != nil {
+		return nil, err
 	}
 
 OWNER_REF:
