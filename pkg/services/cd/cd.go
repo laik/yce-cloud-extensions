@@ -179,7 +179,7 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 		return err
 	}
 
-	if _, _, err := c.Apply(common.YceCloudExtensions, k8s.CD, name, newUnstructuredCD, true); err != nil {
+	if _, _, err := c.Apply(common.YceCloudExtensions, k8s.CD, name, newUnstructuredCD, false); err != nil {
 		return err
 	}
 
@@ -238,7 +238,7 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 		return fmt.Errorf("render error (%s)", err)
 	}
 
-	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, false)
+	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, true)
 	if err != nil {
 		return fmt.Errorf("%s stone apply error (%s)\n", common.ERROR, err)
 	}
