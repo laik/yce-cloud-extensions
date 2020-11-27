@@ -179,7 +179,7 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 		return err
 	}
 
-	if _, _, err := c.Apply(common.YceCloudExtensions, k8s.CD, name, newUnstructuredCD, false); err != nil {
+	if _, _, err := c.Apply(common.YceCloudExtensions, k8s.CD, name, newUnstructuredCD, true); err != nil {
 		return err
 	}
 
