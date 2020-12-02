@@ -96,6 +96,17 @@ spec:
     outputs: []
   steps:
     - args:
+        - '-url'
+        - /workspace/$(params.project_name)
+        - '-codetype'
+        - $(params.code_type)
+      env:
+        - name: DOCKER_CONFIG
+          value: /tekton/home/.docker
+      image: 'yametech/checkdocker:v0.1.0'
+      name: step1
+      resources: {}
+    - args:
         - '--dockerfile=/workspace/git/Dockerfile'
         - '--context=/workspace/git'
         - '--insecure'
@@ -215,6 +226,7 @@ type params struct {
 	PipelineResourceName string
 	PipelineName         string
 	ProjectName          string
+	CodeType             string
 	ProjectVersion       string
 	BuildToolImage       string
 	DestRepoUrl          string
