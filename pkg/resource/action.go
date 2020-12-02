@@ -11,6 +11,8 @@ type Request struct {
 	Branch string `json:"branch"`
 	// CommitID the git commit id
 	CommitID string `json:"commitId"`
+	// CodeType language type
+	CodeType string `json:"codeType"`
 	// Type language type
 	Type string `json:"type"`
 	// RetryCount none

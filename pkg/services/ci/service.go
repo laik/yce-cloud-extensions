@@ -224,6 +224,7 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 		prName,
 		*ci.Spec.Output,
 		pipelineRunGraph,
+		ci.Spec.CodeType,
 	)
 	if err != nil {
 		return err
@@ -447,6 +448,8 @@ func (c *Service) checkAndRecreatePipelineRun(
 	pipelineResourceName,
 	outputUrl string,
 	pipelineRunGraph *unstructured.Unstructured,
+	codeType string,
+
 
 ) (*unstructured.Unstructured, error) {
 	_outputUrl := services.DestRepoUrl
@@ -465,6 +468,8 @@ func (c *Service) checkAndRecreatePipelineRun(
 		BuildToolImage:       services.BuildToolImage,
 		DestRepoUrl:          _outputUrl,
 		CacheRepoUrl:         services.CacheRepoUrl,
+		CodeType:             codeType,
+
 	}
 	defaultObj, err := services.Render(pipelineRunParams, pipelineRunTpl)
 	if err != nil {

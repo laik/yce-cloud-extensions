@@ -151,3 +151,70 @@ spec:
 		t.Fatal("expect not equal")
 	}
 }
+
+func TestPipelineRunConstructor(t *testing.T) {
+	o := &services.Output{}
+	tt = template.Must(tt.Parse(pipelineTpl))
+
+	if err := tt.Execute(o,
+		&params{
+			Namespace:            "test-ops",
+			Name:                 "yce-cloud-extensions-pipeline",
+			PipelineName:         "my-pipeline",
+			CodeType:             "django",
+			PipelineGraph:        "my-graph",
+			PipelineRunGraph:     "run-graph",
+			PipelineResourceName: "resource-name",
+			ProjectName:          "test-project",
+			ProjectVersion:       "abc123",
+			BuildToolImage:       "aaa",
+			DestRepoUrl:          "harbor.ym",
+			CacheRepoUrl:         "cache",
+		}); err != nil {
+		t.Fatal(err)
+	}
+
+	expected := `apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  annotations:
+    fuxi.nip.io/run-tektongraphs: run-graph
+    fuxi.nip.io/tektongraphs: my-graph
+    namespace: test-ops
+  labels:
+    namespace: test-ops
+    tekton.dev/pipeline: my-pipeline
+  name: yce-cloud-extensions-pipeline
+  namespace: test-ops
+spec:
+  params:
+    - name: project_name
+      value: test-project
+    - name: project_version
+      value: abc123
+    - name: build_tool_image
+      value: aaa
+    - name: code_type
+      value: django
+    - name: dest_repo_url
+      value: harbor.ym
+    - name: cache_repo_url
+      value: cache
+  pipelineRef:
+    name: my-pipeline
+  resources:
+    - name: git-addr
+      resourceRef:
+        name: resource-name
+  serviceAccountName: default
+  timeout: 1h0m0s`
+
+	src, dest := make(map[string]interface{}), make(map[string]interface{})
+	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal([]byte(expected), dest); err != nil || err1 != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(src, dest) {
+		t.Fatal("expect not equal")
+	}
+}

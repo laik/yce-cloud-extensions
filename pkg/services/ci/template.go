@@ -41,6 +41,9 @@ spec:
     - default: ''
       name: cache_repo_url
       type: string
+    - default: ''
+      name: code_type
+      type: string
   resources:
     - name: git-addr
       type: git
@@ -57,6 +60,8 @@ spec:
           value: $(params.dest_repo_url)
         - name: cache_repo_url
           value: $(params.cache_repo_url)
+        - name: code_type
+          value: $(params.code_type)
       resources:
         inputs:
           - name: git
@@ -89,12 +94,26 @@ spec:
     - default: none
       name: cache_repo_url
       type: string
+    - default: none
+      name: code_type
+      type: string
   resources:
     inputs:
       - name: git
         type: git
     outputs: []
   steps:
+    - args:
+        - '-url'
+        - /workspace/git
+        - '-codetype'
+        - $(params.code_type)
+      env:
+        - name: DOCKER_CONFIG
+          value: /tekton/home/.docker
+      image: 'yametech/checkdocker:v0.1.0'
+      name: step1
+      resources: {}
     - args:
         - '--dockerfile=/workspace/git/Dockerfile'
         - '--context=/workspace/git'
@@ -109,7 +128,7 @@ spec:
         - name: "DOCKER_CONFIG"
           value: "/tekton/home/.docker"
       image: $(params.build_tool_image)
-      name: main
+      name: step2
       resources: {}
       command: []
       script: ''
@@ -153,6 +172,8 @@ spec:
       value: {{.ProjectVersion}}
     - name: build_tool_image
       value: {{.BuildToolImage}}
+    - name: code_type
+      value: {{.CodeType}}
     - name: dest_repo_url
       value: {{.DestRepoUrl}}
     - name: cache_repo_url
@@ -215,6 +236,7 @@ type params struct {
 	PipelineResourceName string
 	PipelineName         string
 	ProjectName          string
+	CodeType             string
 	ProjectVersion       string
 	BuildToolImage       string
 	DestRepoUrl          string
