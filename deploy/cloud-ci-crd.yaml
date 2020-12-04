@@ -21,6 +21,8 @@ spec:
                   type: string
                 commitId:
                   type: string
+                codeType:
+                  type: string
                 retryCount:
                   type: integer
                 output:
@@ -47,6 +49,9 @@ spec:
         - name: CommitId
           type: string
           jsonPath: .spec.commitId
+        - name: CodeType
+          type: string
+          jsonPath: .spec.codeType
         - name: RetryCount
           type: string
           jsonPath: .spec.retryCount
