@@ -42,11 +42,10 @@ type Resources struct {
 	Data map[string]schema.GroupVersionResource
 }
 
-func NewResources(executeRes []string) *Resources {
+func NewResources(excluded []string) *Resources {
 	rs := &Resources{
-		excluded: executeRes,
-
-		Data: make(map[string]schema.GroupVersionResource),
+		excluded: excluded,
+		Data:     make(map[string]schema.GroupVersionResource),
 	}
 
 	rsInit(rs)
