@@ -22,6 +22,7 @@ type CISpec struct {
 	GitURL     *string `json:"gitUrl"`
 	Branch     *string `json:"branch"`
 	CommitID   *string `json:"commitId"`
+	CodeType   string `json:"codeType"`
 	RetryCount *uint32 `json:"retryCount"`
 	Output     *string `json:"output"`
 	Done       bool    `json:"done"`

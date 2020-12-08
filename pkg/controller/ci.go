@@ -162,6 +162,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 				CommitID:   &request.CommitID,
 				RetryCount: &request.RetryCount,
 				Output:     &request.Output,
+				CodeType:   request.CodeType,
 				FlowId:     &request.FlowId,
 				StepName:   &request.StepName,
 				AckStates:  request.AckStates,

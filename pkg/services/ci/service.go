@@ -219,11 +219,13 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	obj, err = c.checkAndRecreatePipelineRun(
 		prName,
 		projectName,
+		*ci.Spec.CodeType,
 		*ci.Spec.CommitID,
 		pipelineRunGraphName,
 		prName,
 		*ci.Spec.Output,
 		pipelineRunGraph,
+		ci.Spec.CodeType,
 	)
 	if err != nil {
 		return err
@@ -442,11 +444,14 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 func (c *Service) checkAndRecreatePipelineRun(
 	name,
 	projectName,
+	codeType,
 	projectVersion,
 	pipelineRunGraphName,
 	pipelineResourceName,
 	outputUrl string,
 	pipelineRunGraph *unstructured.Unstructured,
+	codeType string,
+
 
 ) (*unstructured.Unstructured, error) {
 	_outputUrl := services.DestRepoUrl
@@ -457,6 +462,7 @@ func (c *Service) checkAndRecreatePipelineRun(
 		Namespace:            common.YceCloudExtensionsOps,
 		Name:                 name,
 		PipelineName:         services.PipelineName,
+		CodeType:             codeType,
 		PipelineGraph:        services.PipelineGraphName,
 		PipelineRunGraph:     pipelineRunGraphName,
 		PipelineResourceName: pipelineResourceName,
@@ -465,6 +471,8 @@ func (c *Service) checkAndRecreatePipelineRun(
 		BuildToolImage:       services.BuildToolImage,
 		DestRepoUrl:          _outputUrl,
 		CacheRepoUrl:         services.CacheRepoUrl,
+		CodeType:             codeType,
+
 	}
 	defaultObj, err := services.Render(pipelineRunParams, pipelineRunTpl)
 	if err != nil {
