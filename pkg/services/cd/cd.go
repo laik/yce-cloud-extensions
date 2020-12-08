@@ -187,6 +187,9 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 }
 
 func (c *CDService) reconcileCD(cd *v1.CD) error {
+	if cd.Spec.Done {
+		return nil
+	}
 	unstructuredNamespace, err := c.Get("", k8s.Namespace, *cd.Spec.DeployNamespace)
 	if err != nil {
 		return fmt.Errorf("reconcile cd (%s) can't not get deploy namespace (%s) error (%s)",
