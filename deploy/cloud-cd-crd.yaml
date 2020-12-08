@@ -23,6 +23,28 @@ spec:
                   type: string
                 artifactInfo:
                   type: object
+                  properties:
+                    servicePorts:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          protocol:
+                            type: string
+                          port:
+                            type: integer
+                          targetPort:
+                            type: integer
+                    command:
+                      type: array
+                      items:
+                        type: string
+                    arguments:
+                      type: array
+                      items:
+                        type: string
                 deployType:
                   type: string
                 cpuLimit:

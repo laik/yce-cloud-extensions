@@ -161,7 +161,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 				ServiceName:     &request.ServiceName,
 				DeployNamespace: &request.DeployNamespace,
 				ServiceImage:    &request.ServiceImage,
-				ArtifactInfo:    *artifactInfo,
+				ArtifactInfo:    artifactInfo,
 				DeployType:      &request.DeployType,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,

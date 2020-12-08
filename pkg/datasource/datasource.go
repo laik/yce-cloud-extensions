@@ -116,7 +116,8 @@ func (i *IDataSourceImpl) Apply(namespace, resource, name string, obj *unstructu
 
 		compareObject(getObj, obj, forceUpdate)
 
-		newObj, updateErr := i.CacheInformerFactory.
+		newObj, updateErr := i.
+			CacheInformerFactory.
 			Interface.
 			Resource(gvr).
 			Namespace(namespace).
@@ -136,15 +137,13 @@ func (i *IDataSourceImpl) Delete(namespace, resource, name string) error {
 	if err != nil {
 		return err
 	}
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		return i.
-			CacheInformerFactory.
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return i.CacheInformerFactory.
 			Interface.
 			Resource(gvr).
 			Namespace(namespace).
 			Delete(context.Background(), name, metav1.DeleteOptions{})
 	})
-	return retryErr
 }
 
 func (i *IDataSourceImpl) Watch(namespace string, resource, resourceVersion string, timeoutSeconds int64, selector interface{}) (<-chan watch.Event, error) {

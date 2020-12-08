@@ -23,7 +23,7 @@ func needInit() (*configure.InstallConfigure, error) {
 var addr = "0.0.0.0:8080"
 
 func main() {
-	flag.StringVar(&addr, "addr", "listen address", "-addr 0.0.0.0:8080")
+	flag.StringVar(&addr, "addr", "0.0.0.0:8080", "-addr 0.0.0.0:8080")
 	flag.Parse()
 	cfg, err := needInit()
 	if err != nil {

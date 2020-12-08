@@ -117,7 +117,11 @@ func (in *CDSpec) DeepCopyInto(out *CDSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	in.ArtifactInfo.DeepCopyInto(&out.ArtifactInfo)
+	if in.ArtifactInfo != nil {
+		in, out := &in.ArtifactInfo, &out.ArtifactInfo
+		*out = new(ArtifactInfo)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.DeployType != nil {
 		in, out := &in.DeployType, &out.DeployType
 		*out = new(string)
