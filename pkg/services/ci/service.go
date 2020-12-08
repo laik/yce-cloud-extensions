@@ -219,7 +219,6 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	obj, err = c.checkAndRecreatePipelineRun(
 		prName,
 		projectName,
-		*ci.Spec.CodeType,
 		*ci.Spec.CommitID,
 		pipelineRunGraphName,
 		prName,
@@ -444,7 +443,6 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 func (c *Service) checkAndRecreatePipelineRun(
 	name,
 	projectName,
-	codeType,
 	projectVersion,
 	pipelineRunGraphName,
 	pipelineResourceName,
@@ -462,7 +460,6 @@ func (c *Service) checkAndRecreatePipelineRun(
 		Namespace:            common.YceCloudExtensionsOps,
 		Name:                 name,
 		PipelineName:         services.PipelineName,
-		CodeType:             codeType,
 		PipelineGraph:        services.PipelineGraphName,
 		PipelineRunGraph:     pipelineRunGraphName,
 		PipelineResourceName: pipelineResourceName,
