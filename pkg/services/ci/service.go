@@ -455,6 +455,9 @@ func (c *Service) checkAndRecreatePipelineRun(
 	if outputUrl != "" {
 		_outputUrl = outputUrl
 	}
+	if codeType == "" {
+		codeType = "none"
+	}
 	pipelineRunParams := params{
 		Namespace:            common.YceCloudExtensionsOps,
 		Name:                 name,

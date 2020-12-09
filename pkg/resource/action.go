@@ -31,15 +31,13 @@ type RequestCd struct {
 	ServiceName     string `json:"serviceName"`
 	ServiceImage    string `json:"serviceImage"`
 	DeployNamespace string `json:"deployNamespace"`
-
-	ArtifactInfo map[string]interface{} `json:"artifactInfo"`
-
-	DeployType  string `json:"DeployType"`
-	CPULimit    string `json:"cpuLimit"`
-	MEMLimit    string `json:"memLimit"`
-	CPURequests string `json:"cpuRequests"`
-	MEMRequests string `json:"memRequests"`
-	Replicas    uint32 `json:"replicas"`
+	ArtifactInfo    string `json:"artifactInfo"`
+	DeployType      string `json:"DeployType"`
+	CPULimit        string `json:"cpuLimit"`
+	MEMLimit        string `json:"memLimit"`
+	CPURequests     string `json:"cpuRequests"`
+	MEMRequests     string `json:"memRequests"`
+	Replicas        uint32 `json:"replicas"`
 }
 
 type Response struct {
