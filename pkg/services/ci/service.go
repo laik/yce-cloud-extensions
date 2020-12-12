@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
@@ -560,5 +561,5 @@ func (c *Service) checkAndRecreatePipelineResource(name, gitUrl, branch string) 
 }
 
 func pipelineRunName(project, branch string) string {
-	return fmt.Sprintf("%s-%s", project, branch)
+	return strings.Replace(strings.ToLower(fmt.Sprintf("%s-%s", project, branch)), "_", "-", -1)
 }
