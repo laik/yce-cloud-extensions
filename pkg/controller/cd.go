@@ -93,6 +93,7 @@ RETRY:
 		goto RETRY
 	}
 
+	fmt.Printf("cd controller start watch cd event\n")
 	for {
 		select {
 		case <-stop:
@@ -118,6 +119,8 @@ RETRY:
 
 func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 	route := gin.New()
+	route.Use(gin.Logger())
+
 	route.POST("/", func(g *gin.Context) {
 		// 接收到 echoer post 的请求数据
 		rawData, err := g.GetRawData()

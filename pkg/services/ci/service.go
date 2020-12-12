@@ -50,10 +50,12 @@ RETRY:
 
 	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, c.lastCIVersion, 0, nil)
 	if err != nil {
-		fmt.Printf("%s watch ciChan error (%s)\n", common.ERROR, err)
+		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
 		time.Sleep(1 * time.Second)
 		goto RETRY
 	}
+
+	fmt.Printf("ci service start watch ci channel and pipeline run channel\n")
 	for {
 		select {
 		case <-stop:

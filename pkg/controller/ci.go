@@ -98,6 +98,7 @@ RETRY:
 		goto RETRY
 	}
 
+	fmt.Printf("start watch ci channel.....\n")
 	for {
 		select {
 		case <-stop:
@@ -124,6 +125,8 @@ RETRY:
 func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 	gin.SetMode("debug")
 	route := gin.New()
+	route.Use(gin.Logger())
+
 	route.POST("/", func(g *gin.Context) {
 		// 接收到 echoer post 的请求数据
 		rawData, err := g.GetRawData()

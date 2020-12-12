@@ -18,16 +18,16 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-var _ services.IService = &CDService{}
+var _ services.IService = &Service{}
 
-type CDService struct {
+type Service struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
 	lastCDVersion    string
 	lastStoneVersion string
 }
 
-func (c *CDService) Start(stop <-chan struct{}) {
+func (c *Service) Start(stop <-chan struct{}) {
 RETRY:
 	cdChan, err := c.Watch(common.YceCloudExtensions, k8s.CD, c.lastCDVersion, 0, nil)
 	if err != nil {
@@ -41,6 +41,8 @@ RETRY:
 		time.Sleep(1 * time.Second)
 		goto RETRY
 	}
+
+	fmt.Printf("cd service start watch ci channel and pipeline run channel\n")
 	for {
 		select {
 		case <-stop:
@@ -94,7 +96,7 @@ func labelsToQuery(data map[string]string) string {
 	return strings.Join(result, ",")
 }
 
-func (c *CDService) reconcileStone(stone runtime.Object) error {
+func (c *Service) reconcileStone(stone runtime.Object) error {
 	stoneBytes, err := json.Marshal(stone)
 	if err != nil {
 		return err
@@ -186,7 +188,7 @@ func (c *CDService) reconcileStone(stone runtime.Object) error {
 	return nil
 }
 
-func (c *CDService) reconcileCD(cd *v1.CD) error {
+func (c *Service) reconcileCD(cd *v1.CD) error {
 	if cd.Spec.Done {
 		return nil
 	}
@@ -249,8 +251,8 @@ func (c *CDService) reconcileCD(cd *v1.CD) error {
 	return nil
 }
 
-func NewCDService(cfg *configure.InstallConfigure, dsrc datasource.IDataSource) *CDService {
-	return &CDService{
+func NewCDService(cfg *configure.InstallConfigure, dsrc datasource.IDataSource) *Service {
+	return &Service{
 		InstallConfigure: cfg,
 		IDataSource:      dsrc,
 		lastStoneVersion: "0",
