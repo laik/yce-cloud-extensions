@@ -148,7 +148,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 
 		// {git-project-name}-{Branch}
 		project, err := tools.ExtractProject(request.GitUrl)
-		var name = strings.ToUpper(strings.Replace(fmt.Sprintf("%s-%s", project, request.Branch), "_", "-", -1))
+		var name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", project, request.Branch), "_", "-", -1))
 
 		// 构造一个CI的结构
 		ci := &v1.CI{
