@@ -17,6 +17,7 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -147,7 +148,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 
 		// {git-project-name}-{Branch}
 		project, err := tools.ExtractProject(request.GitUrl)
-		var name = fmt.Sprintf("%s-%s", project, request.Branch)
+		var name = strings.ToUpper(strings.Replace(fmt.Sprintf("%s-%s", project, request.Branch), "_", "-", -1))
 
 		// 构造一个CI的结构
 		ci := &v1.CI{
