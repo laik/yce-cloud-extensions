@@ -183,6 +183,7 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, unstructured, true)
 		if err != nil {
 			internalApplyErr(g, err)
+			fmt.Printf("ci controller apply (%s) error (%s)\n", name, err)
 			return
 		}
 

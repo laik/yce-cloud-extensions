@@ -191,7 +191,7 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 		obj, _, err := s.Apply(common.YceCloudExtensions, k8s.CD, name, unstructured, true)
 		if err != nil {
 			internalApplyErr(g, err)
-			fmt.Printf("cd controller apply error (%s)\n", err)
+			fmt.Printf("cd controller apply (%s) error (%s)\n", name, err)
 			return
 		}
 
