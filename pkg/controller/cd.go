@@ -96,7 +96,7 @@ func (s *CDController) recv(stop <-chan struct{}, errC chan<- error) {
 		return
 	}
 
-	fmt.Printf("cd controller start watch cd event\n")
+	fmt.Printf("%s cd controller start watch cd event\n", common.INFO)
 
 	for {
 		select {

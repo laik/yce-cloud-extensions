@@ -38,45 +38,50 @@ func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 		errC <- err
 	}
 
-	fmt.Printf("%s cd service start watch ci channel and pipeline run channel\n", common.INFO)
+	fmt.Printf("%s service cd start watch ci channel and pipeline run channel\n", common.INFO)
 	for {
 		select {
 		case <-stop:
-			fmt.Printf("%s cd service get stop order\n", common.INFO)
+			fmt.Printf("%s service cd get stop order\n", common.INFO)
 			return
 		case stoneEvent, ok := <-stoneChan:
 			if !ok {
-				fmt.Printf("%s cd service watch stone resource channel stop\n", common.ERROR)
+				fmt.Printf("%s service cd watch stone resource channel stop\n", common.ERROR)
 				errC <- fmt.Errorf("watch stone channel closed")
 				return
 			}
 			if stoneEvent.Type == watch.Deleted {
 				continue
 			}
+
 			stone := stoneEvent.Object
 			if err := c.reconcileStone(stone); err != nil {
-				fmt.Printf("%s reconcile stone error(%s)\n", common.ERROR, err)
+				fmt.Printf("%s service cd reconcile stone error(%s)\n", common.ERROR, err)
 			}
+
 			// record watch version
 			result, err := tools.GetObjectValue(stone, "metadata.resourceVersion")
 			if err != nil {
 				fmt.Printf("%s cd service watch stone resource version not found\n", common.ERROR)
 				continue
 			}
+
 			c.lastStoneVersion = result.String()
 
 		case item, ok := <-cdChan:
 			if !ok {
-				fmt.Printf("%s cd service watch cd resource channel stop\n", common.ERROR)
-				errC <- fmt.Errorf("cd service watch cd channel closed")
+				fmt.Printf("%s service cd watch cd resource channel stop\n", common.ERROR)
+				errC <- fmt.Errorf("service cd watch cd channel closed")
 			}
+
 			cd := &v1.CD{}
 			if err := tools.RuntimeObjectToInstance(item.Object, cd); err != nil {
-				fmt.Printf("%s cd service convert cd resource error(%s)\n", common.ERROR, err)
+				fmt.Printf("%s service cd convert cd (%s) resource error (%s)\n", common.ERROR, cd.GetName(), err)
 				continue
 			}
+
 			if err := c.reconcileCD(cd); err != nil {
-				fmt.Printf("%s reconcile cd handle error (%s)\n", common.ERROR, err)
+				fmt.Printf("%s service cd reconcile (%s) handle error (%s)\n", common.ERROR, cd.GetName(), err)
 				continue
 			}
 			// record watch version

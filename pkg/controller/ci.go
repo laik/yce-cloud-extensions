@@ -28,7 +28,8 @@ type CIController struct {
 	client.IClient
 	services.IService
 	lastVersion string
-	proc        *proc.Proc
+
+	proc *proc.Proc
 }
 
 func (s *CIController) response2echoer(data map[string]interface{}) error {
@@ -43,12 +44,10 @@ func (s *CIController) response2echoer(data map[string]interface{}) error {
 }
 
 func (s *CIController) reconcile(ci *v1.CI) error {
-	if !ci.Spec.Done {
+	if !ci.Spec.Done || len(ci.Spec.AckStates) == 0 {
 		return nil
 	}
-	if len(ci.Spec.AckStates) == 0 {
-		return nil
-	}
+
 	resp := &resource.Response{
 		FlowId:   *ci.Spec.FlowId,
 		StepName: *ci.Spec.StepName,
@@ -56,6 +55,7 @@ func (s *CIController) reconcile(ci *v1.CI) error {
 		UUID:     *ci.Spec.UUID,
 		Done:     ci.Spec.Done,
 	}
+
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 		value := item
 		ci := &v1.CI{}
 		if err := tools.UnstructuredObjectToInstanceObj(&value, ci); err != nil {
-			fmt.Printf("UnstructuredObjectToInstanceObj error (%s)", err)
+			fmt.Printf("%s UnstructuredObjectToInstanceObj error (%s)", common.ERROR, err)
 			continue
 		}
 		if err := s.reconcile(ci); err != nil {
@@ -89,6 +89,7 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 			continue
 		}
 	}
+
 	ciList := &v1.CIList{}
 	if err := tools.UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
 		errC <- fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
@@ -101,7 +102,8 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 		return
 	}
 
-	fmt.Printf("ci controller start watch ci channel.....\n")
+	fmt.Printf("%s ci controller start watch ci channel.....\n", common.INFO)
+
 	for {
 		select {
 		case <-stop:
@@ -217,6 +219,7 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 		IService:         servicesci.NewService(cfg, drs),
 		IClient:          httpclient.NewIClient(),
 		IDataSource:      drs,
-		proc:             proc.NewProc(),
+
+		proc: proc.NewProc(),
 	}
 }

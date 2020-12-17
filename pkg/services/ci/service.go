@@ -52,36 +52,36 @@ func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 		errC <- err
 	}
 
-	fmt.Printf("%s ci service start watch ci channel and pipeline run channel\n", common.INFO)
+	fmt.Printf("%s service ci start watch ci channel and pipeline run channel\n", common.INFO)
 
 	for {
 		select {
 		case <-stop:
-			fmt.Printf("%s ci service get stop order\n", common.INFO)
+			fmt.Printf("%s service ci service get stop order\n", common.INFO)
 			return
 		case pipelineRunEvent, ok := <-pipelineRunChan:
 			if !ok {
-				fmt.Printf("%s pipeline run channel closed\n", common.ERROR)
-				errC <- fmt.Errorf("service watch pipeline run channel closed")
+				fmt.Printf("%s service ci pipeline run channel closed\n", common.ERROR)
+				errC <- fmt.Errorf("service ci watch pipeline run channel closed")
 				return
 			}
 			if pipelineRunEvent.Type == watch.Deleted {
 				continue
 			}
 			if err := c.reconcilePipelineRun(pipelineRunEvent.Object); err != nil {
-				fmt.Printf("%s pipeline run channel recv handle error (%s)\n", common.ERROR, err)
+				fmt.Printf("%s service ci watch pipeline run channel recv handle error (%s)\n", common.ERROR, err)
 			}
 			// record watch version
 			result, err := tools.GetObjectValue(pipelineRunEvent.Object, "metadata.resourceVersion")
 			if err != nil {
-				fmt.Printf("%s cd service watch pipelinerun resource version not found\n", common.ERROR)
+				fmt.Printf("%s service ci watch pipelinerun resource version not found\n", common.ERROR)
 				continue
 			}
 			c.lastPRVersion = result.String()
 
 		case ciEvent, ok := <-ciChan:
 			if !ok {
-				fmt.Printf("%s ci channel closed\n", common.ERROR)
+				fmt.Printf("%s service ci channel closed\n", common.ERROR)
 				errC <- fmt.Errorf("service watch ci channel closed")
 				return
 			}
@@ -89,12 +89,15 @@ func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 			if ciEvent.Type == watch.Deleted {
 				continue
 			}
+
 			ciObj := &v1.CI{}
 			if err := tools.RuntimeObjectToInstance(ciEvent.Object, ciObj); err != nil {
-				fmt.Printf("%s ci channel recv object can't not convert to ci object (%s)\n", common.ERROR, err)
+				fmt.Printf("%s service ci channel recv object can't not convert to ci object (%s)\n", common.ERROR, err)
+				continue
 			}
+
 			if err := c.reconcileCI(ciObj); err != nil {
-				fmt.Printf("%s ci channel reconcil error (%s)\n", common.ERROR, err)
+				fmt.Printf("%s service ci channel reconcil object (%s) error (%s)\n", common.ERROR, ciObj.GetName(), err)
 			}
 			c.lastCIVersion = ciObj.GetResourceVersion()
 		}
