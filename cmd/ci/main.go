@@ -30,9 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	srv := ctl.NewCIController(cfg)
-	stop := make(chan struct{})
-	if err := srv.Run(addr, stop); err != nil {
+	if err := ctl.NewCIController(cfg).Run(addr); err != nil {
 		panic(err)
 	}
 }

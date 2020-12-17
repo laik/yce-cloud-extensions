@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
@@ -40,31 +39,31 @@ func NewService(cfg *configure.InstallConfigure, drs datasource.IDataSource) ser
 	}
 }
 
-func (c *Service) Start(stop <-chan struct{}) {
-RETRY:
+func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 	pipelineRunChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.PipelineRun, c.lastPRVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
 	}
 
 	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, c.lastCIVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
 	}
 
-	fmt.Printf("ci service start watch ci channel and pipeline run channel\n")
+	fmt.Printf("%s ci service start watch ci channel and pipeline run channel\n", common.INFO)
+
 	for {
 		select {
 		case <-stop:
+			fmt.Printf("%s ci service get stop order\n", common.INFO)
 			return
 		case pipelineRunEvent, ok := <-pipelineRunChan:
 			if !ok {
 				fmt.Printf("%s pipeline run channel closed\n", common.ERROR)
-				goto RETRY
+				errC <- fmt.Errorf("service watch pipeline run channel closed")
+				return
 			}
 			if pipelineRunEvent.Type == watch.Deleted {
 				continue
@@ -83,7 +82,8 @@ RETRY:
 		case ciEvent, ok := <-ciChan:
 			if !ok {
 				fmt.Printf("%s ci channel closed\n", common.ERROR)
-				goto RETRY
+				errC <- fmt.Errorf("service watch ci channel closed")
+				return
 			}
 			// ignore delete event
 			if ciEvent.Type == watch.Deleted {

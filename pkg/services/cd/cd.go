@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
@@ -27,22 +26,19 @@ type Service struct {
 	lastStoneVersion string
 }
 
-func (c *Service) Start(stop <-chan struct{}) {
-RETRY:
+func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 	cdChan, err := c.Watch(common.YceCloudExtensions, k8s.CD, c.lastCDVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch cd resource error (%s)\n", common.ERROR, err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
 	}
 	stoneChan, err := c.Watch("", k8s.Stone, c.lastStoneVersion, 0, "yce-cloud-extensions")
 	if err != nil {
 		fmt.Printf("%s watch cd resource error (%s)\n", common.ERROR, err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
 	}
 
-	fmt.Printf("cd service start watch ci channel and pipeline run channel\n")
+	fmt.Printf("%s cd service start watch ci channel and pipeline run channel\n", common.INFO)
 	for {
 		select {
 		case <-stop:
@@ -51,7 +47,8 @@ RETRY:
 		case stoneEvent, ok := <-stoneChan:
 			if !ok {
 				fmt.Printf("%s cd service watch stone resource channel stop\n", common.ERROR)
-				goto RETRY
+				errC <- fmt.Errorf("watch stone channel closed")
+				return
 			}
 			if stoneEvent.Type == watch.Deleted {
 				continue
@@ -71,7 +68,7 @@ RETRY:
 		case item, ok := <-cdChan:
 			if !ok {
 				fmt.Printf("%s cd service watch cd resource channel stop\n", common.ERROR)
-				goto RETRY
+				errC <- fmt.Errorf("cd service watch cd channel closed")
 			}
 			cd := &v1.CD{}
 			if err := tools.RuntimeObjectToInstance(item.Object, cd); err != nil {

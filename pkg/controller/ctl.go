@@ -5,5 +5,5 @@ var _ Interface = &CDController{}
 
 // Interface ....
 type Interface interface {
-	Run(addr string, stop <-chan struct{}) error
+	Run(addr string) error
 }

@@ -3,12 +3,16 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
+	"github.com/laik/yce-cloud-extensions/pkg/proc"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	servicesci "github.com/laik/yce-cloud-extensions/pkg/services/ci"
@@ -16,9 +20,6 @@ import (
 	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type CIController struct {
@@ -27,6 +28,7 @@ type CIController struct {
 	client.IClient
 	services.IService
 	lastVersion string
+	proc        *proc.Proc
 }
 
 func (s *CIController) response2echoer(data map[string]interface{}) error {
@@ -68,10 +70,11 @@ func (s *CIController) reconcile(ci *v1.CI) error {
 	return s.response2echoer(data)
 }
 
-func (s *CIController) recv(stop <-chan struct{}) error {
+func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 	list, err := s.List(common.YceCloudExtensionsOps, k8s.CI, "", 0, 0, nil)
 	if err != nil {
-		return err
+		errC <- err
+		return
 	}
 
 	for _, item := range list.Items {
@@ -88,45 +91,51 @@ func (s *CIController) recv(stop <-chan struct{}) error {
 	}
 	ciList := &v1.CIList{}
 	if err := tools.UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
-		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
+		errC <- fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
+		return
 	}
 
-RETRY:
 	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.CI, ciList.GetResourceVersion(), 0, nil)
 	if err != nil {
-		fmt.Printf("watch error (%s)\n", err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
+		return
 	}
 
-	fmt.Printf("start watch ci channel.....\n")
+	fmt.Printf("ci controller start watch ci channel.....\n")
 	for {
 		select {
 		case <-stop:
-			return nil
+			fmt.Printf("%s ci controller stop\n", common.INFO)
+			return
+
 		case item, ok := <-eventChan:
 			if !ok {
-				goto RETRY
+				fmt.Printf("%s ci controller watch stone resource channel stop\n", common.ERROR)
+				errC <- fmt.Errorf("controller watch ci channel closed")
+				return
 			}
+
 			ci := &v1.CI{}
 			err := tools.RuntimeObjectToInstance(item.Object, ci)
 			if err != nil {
 				fmt.Printf("%s RuntimeObjectToInstance error (%s)\n", common.WARN, err)
 				continue
 			}
+
 			if err := s.reconcile(ci); err != nil {
 				fmt.Printf("%s ci controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
+
 			s.lastVersion = ci.GetResourceVersion()
 		}
 	}
 }
 
-func (s *CIController) Run(addr string, stop <-chan struct{}) error {
+func (s *CIController) Run(addr string) error {
 	gin.SetMode("debug")
 	route := gin.New()
-	route.Use(gin.Logger())
+	route.Use(gin.Logger(), gin.Recovery())
 
 	route.POST("/", func(g *gin.Context) {
 		// 接收到 echoer post 的请求数据
@@ -191,10 +200,14 @@ func (s *CIController) Run(addr string, stop <-chan struct{}) error {
 		g.JSON(http.StatusOK, obj)
 	})
 
-	go s.Start(stop)
 	go route.Run(addr)
+	s.proc.Add(s.Start)
+	s.proc.Add(s.recv)
 
-	return s.recv(stop)
+	err := <-s.proc.Start()
+	s.proc.Stop()
+
+	return err
 }
 
 func NewCIController(cfg *configure.InstallConfigure) Interface {
@@ -204,5 +217,6 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 		IService:         servicesci.NewService(cfg, drs),
 		IClient:          httpclient.NewIClient(),
 		IDataSource:      drs,
+		proc:             proc.NewProc(),
 	}
 }

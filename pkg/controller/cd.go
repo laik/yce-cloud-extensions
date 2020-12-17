@@ -3,21 +3,22 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
+	"github.com/laik/yce-cloud-extensions/pkg/proc"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	servicescd "github.com/laik/yce-cloud-extensions/pkg/services/cd"
 	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type CDController struct {
@@ -26,6 +27,7 @@ type CDController struct {
 	httpclient.IClient
 	services.IService
 	lastVersion string
+	proc        *proc.Proc
 }
 
 func (s *CDController) handle(cd *v1.CD) error {
@@ -61,10 +63,11 @@ func (s *CDController) response2echoer(data map[string]interface{}) error {
 	return nil
 }
 
-func (s *CDController) recv(stop <-chan struct{}) error {
+func (s *CDController) recv(stop <-chan struct{}, errC chan<- error) {
 	list, err := s.List(common.YceCloudExtensions, k8s.CD, "", 0, 0, nil)
 	if err != nil {
-		return err
+		errC <- err
+		return
 	}
 
 	for _, item := range list.Items {
@@ -82,42 +85,50 @@ func (s *CDController) recv(stop <-chan struct{}) error {
 
 	cdList := &v1.CDList{}
 	if err := tools.UnstructuredListObjectToInstanceObjectList(list, cdList); err != nil {
-		return fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
+		errC <- fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
+		return
 	}
 
-RETRY:
 	eventChan, err := s.Watch(common.YceCloudExtensions, k8s.CD, cdList.GetResourceVersion(), 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch error (%s)\n", common.ERROR, err)
-		time.Sleep(1 * time.Second)
-		goto RETRY
+		errC <- err
+		return
 	}
 
 	fmt.Printf("cd controller start watch cd event\n")
+
 	for {
 		select {
 		case <-stop:
-			return nil
+			fmt.Printf("%s cd controller stop", common.INFO)
+			return
+
 		case item, ok := <-eventChan:
 			if !ok {
-				goto RETRY
+				fmt.Printf("%s cd controller watch stone resource channel stop\n", common.ERROR)
+				errC <- fmt.Errorf("controller watch cd channel closed")
+				return
 			}
+
 			cd := &v1.CD{}
 			err := tools.RuntimeObjectToInstance(item.Object, cd)
 			if err != nil {
 				fmt.Printf("%s RuntimeObjectToInstance error (%s)\n", common.ERROR, err)
 				continue
 			}
+
 			if err := s.handle(cd); err != nil {
 				fmt.Printf("%s cd controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
+
 			s.lastVersion = cd.GetResourceVersion()
 		}
 	}
 }
 
-func (s *CDController) Run(addr string, stop <-chan struct{}) error {
+func (s *CDController) Run(addr string) error {
 	route := gin.New()
 	route.Use(gin.Logger())
 
@@ -197,11 +208,15 @@ func (s *CDController) Run(addr string, stop <-chan struct{}) error {
 
 		g.JSON(http.StatusOK, obj)
 	})
-	go s.Start(stop)
 
 	go route.Run(addr)
 
-	return s.recv(stop)
+	s.proc.Add(s.Start)
+	s.proc.Add(s.recv)
+
+	err := <-s.proc.Start()
+	s.proc.Stop()
+	return err
 }
 
 func NewCDController(cfg *configure.InstallConfigure) Interface {
@@ -211,5 +226,6 @@ func NewCDController(cfg *configure.InstallConfigure) Interface {
 		IService:         servicescd.NewCDService(cfg, drs),
 		IDataSource:      datasource.NewIDataSource(cfg),
 		IClient:          httpclient.NewIClient(),
+		proc:             proc.NewProc(),
 	}
 }
