@@ -1,9 +1,0 @@
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: yce-cloud-extensions-ops
----
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: yce-cloud-extensions

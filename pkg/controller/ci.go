@@ -137,7 +137,7 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 func (s *CIController) Run(addr string) error {
 	gin.SetMode("debug")
 	route := gin.New()
-	route.Use(gin.Logger(), gin.Recovery())
+	route.Use(gin.Logger())
 
 	route.POST("/", func(g *gin.Context) {
 		// 接收到 echoer post 的请求数据
