@@ -202,14 +202,14 @@ func (s *CIController) Run(addr string) error {
 		g.JSON(http.StatusOK, obj)
 	})
 
-	go route.Run(addr)
+	go func() {
+		s.proc.Error() <- route.Run(addr)
+	}()
+
 	s.proc.Add(s.Start)
 	s.proc.Add(s.recv)
 
-	err := <-s.proc.Start()
-	s.proc.Stop()
-
-	return err
+	return <-s.proc.Start()
 }
 
 func NewCIController(cfg *configure.InstallConfigure) Interface {

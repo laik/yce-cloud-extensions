@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/laik/yce-cloud-extensions/pkg/common"
-	client "k8s.io/client-go/dynamic"
-
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
+	client "k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 )
 
