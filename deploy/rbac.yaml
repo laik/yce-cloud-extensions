@@ -5,7 +5,7 @@ metadata:
 rules:
   - apiGroups: ["*"]
     resources: ["*"]
-    verbs: ["get", "list", "delete","watch"]
+    verbs: ["create","update","get", "list", "delete","watch"]
 ---
 apiVersion: v1
 kind: ServiceAccount
