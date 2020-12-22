@@ -48,7 +48,12 @@ func (c *client) Do() error {
 		Post(c.url)
 	if response != nil {
 		if response.StatusCode() != 200 {
-			return fmt.Errorf("post to (%s) response code (%d) error (%s)", c.url, response.StatusCode(),response.Error())
+			return fmt.Errorf("post to (%s) response code (%d) error (%s) body (%s)",
+				c.url,
+				response.StatusCode(),
+				response.String(),
+				body,
+			)
 		}
 	}
 	if err != nil {

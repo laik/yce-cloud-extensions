@@ -1,0 +1,63 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: yce-cloud-extensions-ops
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: yce-cloud-extensions
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: yce-cloud-extensions-ci
+  name: yce-cloud-extensions-ci
+  namespace: yce-cloud-extensions
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      serviceAccount: yce-cloud-extensions
+      containers:
+        - name: yce-cloud-extensions-ci
+          args:
+            [
+                "--registry",
+                "etcd",
+                "--registry_address",
+                "etcd.kube-system.svc.cluster.local:2379",
+                "--etcd_address",
+                "etcd.kube-system.svc.cluster.local:2379",
+                "--in_cluster",
+                "true",
+                "api",
+                "--handler=http",
+            ]
+          image: harbor.ym/devops/ci:v0.1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: yce-cloud-extensions-ci
+  name: yce-cloud-extensions-ci
+  namespace: yce-cloud-extensions
+spec:
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: yce-cloud-extensions-ci
