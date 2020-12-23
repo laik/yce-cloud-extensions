@@ -40,7 +40,7 @@ spec:
 		  env :
 			{{range .Environments}}
 			- name: {{.Name}}
-			  value: {{.Value}}
+			  value: {{.Kvalue}}
 			{{ end }}
 		  {{- end }}
           resources:
