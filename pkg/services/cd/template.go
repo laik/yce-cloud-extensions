@@ -37,12 +37,12 @@ spec:
           {{ end }}
           {{- end }}
           {{- if .Environments}}
-		  env :
-			{{range .Environments}}
-			- name: {{.Name}}
-			  value: {{.Envvalue}}
-			{{ end }}
-		  {{- end }}
+          env:
+          {{range .Environments}}
+            - name: {{.Name}}
+              value: {{.Envvalue}}
+          {{ end }}
+          {{- end }}
           resources:
             limits:
               cpu: {{.CpuLimit}}
