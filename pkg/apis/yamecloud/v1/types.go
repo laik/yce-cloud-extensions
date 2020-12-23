@@ -85,8 +85,8 @@ type ServicePorts struct {
 }
 
 type Envs struct {
-	Name  string `json:"name"`
-	Kvalue string `json:"kvalue"`
+	Name     string `json:"name"`
+	Envvalue string `json:"envvalue"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
