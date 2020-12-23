@@ -36,6 +36,13 @@ spec:
             - {{.}}
           {{ end }}
           {{- end }}
+          {{- if .Environments}}
+		  env :
+			{{range .Environments}}
+			- name: {{.Name}}
+			  value: {{.Value}}
+			{{ end }}
+		  {{- end }}
           resources:
             limits:
               cpu: {{.CpuLimit}}
@@ -81,6 +88,7 @@ type params struct {
 	UUID           string
 	Coordinates    []ResourceLimitStruct
 	CDName         string
+	Environments   []v1.Envs
 }
 
 type NamespaceResourceLimit struct {
