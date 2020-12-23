@@ -73,6 +73,7 @@ type CDSpec struct {
 type ArtifactInfo struct {
 	Command      []string       `json:"command"`
 	Arguments    []string       `json:"arguments"`
+	Environments []Envs         `json:"environments"`
 	ServicePorts []ServicePorts `json:"servicePorts"`
 }
 
@@ -81,6 +82,11 @@ type ServicePorts struct {
 	Protocol   string `json:"protocol"`
 	Port       int32  `json:"port"`
 	TargetPort int32  `json:"targetPort"`
+}
+
+type Envs struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
