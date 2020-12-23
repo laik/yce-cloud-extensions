@@ -52,7 +52,7 @@ spec:
                         properties:
                           name:
                             type: string
-                          kvalue:
+                          envvalue:
                             type: string
                 deployType:
                   type: string
