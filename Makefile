@@ -6,8 +6,8 @@ code-gen:
       yamecloud:v1 
 
 build-ci:
-	docker build -t harbor.ym/devops/ci:v0.1.0 -f docker/Dockerfile.ci .
-	docker push harbor.ym/devops/ci:v0.1.0
+	docker build -t harbor.ym/devops/ci:v0.1.2 -f docker/Dockerfile.ci .
+	docker push harbor.ym/devops/ci:v0.1.2
 
 build-cd:
 	docker build -t harbor.ym/devops/cd:v0.1.0 -f docker/Dockerfile.cd .

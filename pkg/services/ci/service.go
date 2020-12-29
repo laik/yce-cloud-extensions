@@ -469,10 +469,10 @@ func (c *Service) checkAndRecreatePipelineRun(
 		codeType = "none"
 	}
 	if strings.Trim(projectFile, " ") == "" {
-		projectFile = `none`
+		projectFile = `Dockerfile`
 	}
 	if strings.Trim(projectPath, " ") == "" {
-		projectPath = `none`
+		projectPath = `*`
 	}
 	pipelineRunParams := params{
 		Namespace:            common.YceCloudExtensionsOps,
