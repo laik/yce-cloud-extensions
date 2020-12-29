@@ -44,6 +44,12 @@ spec:
     - default: ''
       name: code_type
       type: string
+    - default: ''
+      name: sub_dir
+      type: string
+    - default: "Dockerfile"
+      name: dockerfile
+      type: string
   resources:
     - name: git-addr
       type: git
@@ -62,6 +68,10 @@ spec:
           value: $(params.cache_repo_url)
         - name: code_type
           value: $(params.code_type)
+        - name: sub_dir
+          value: $(params.sub_dir)
+        - name: dockerfile
+          value: $(params.dockerfile)
       resources:
         inputs:
           - name: git
@@ -97,6 +107,12 @@ spec:
     - default: none
       name: code_type
       type: string
+    - default: none
+      name: sub_dir
+      type: string
+    - default: "Dockerfile"
+      name: dockerfile
+      type: string
   resources:
     inputs:
       - name: git
@@ -108,14 +124,16 @@ spec:
         - /workspace/git
         - '-codetype'
         - $(params.code_type)
+        - '-path'
+        - $(params.sub_dir)
       env:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
-      image: 'yametech/checkdocker:v0.1.0'
+      image: 'yametech/checkdocker:v0.1.2'
       name: step1
       resources: {}
     - args:
-        - '--dockerfile=/workspace/git/Dockerfile'
+        - '--dockerfile=/workspace/git/$(params.dockerfile)'
         - '--context=/workspace/git'
         - '--insecure'
         - '--force'
@@ -178,6 +196,10 @@ spec:
       value: {{.DestRepoUrl}}
     - name: cache_repo_url
       value: {{.CacheRepoUrl}}
+    - name: sub_dir
+      value: {{.ProjectPath}}
+    - name: dockerfile
+      value: {{.ProjectFile}}
   pipelineRef:
     name: {{.PipelineName}}
   resources:
@@ -250,4 +272,8 @@ type params struct {
 	RegistryRepoUrl  string
 	RegistryPassword string
 	RegistryUsername string
+
+	// 20201229 add dockerfile path and supported sub directory project
+	ProjectFile string
+	ProjectPath string
 }

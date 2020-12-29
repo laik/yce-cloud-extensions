@@ -39,6 +39,10 @@ spec:
                   type: string
                 done:
                   type: boolean
+                projectPath:
+                  type: string
+                projectFile:
+                  type: string
       additionalPrinterColumns:
         - name: GitUrl
           type: string
@@ -73,6 +77,12 @@ spec:
         - name: Done
           type: boolean
           jsonPath: .spec.done
+        - name: ProjectPath
+          type: string
+          jsonPath: .spec.projectPath
+        - name: ProjectFile
+          type: string
+          jsonPath: .spec.projectFile
   scope: Namespaced
   names:
     plural: cis

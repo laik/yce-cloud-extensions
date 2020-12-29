@@ -231,6 +231,8 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 		*ci.Spec.Output,
 		pipelineRunGraph,
 		ci.Spec.CodeType,
+		ci.Spec.ProjectPath,
+		ci.Spec.ProjectFile,
 	)
 	if err != nil {
 		return err
@@ -455,6 +457,8 @@ func (c *Service) checkAndRecreatePipelineRun(
 	outputUrl string,
 	pipelineRunGraph *unstructured.Unstructured,
 	codeType string,
+	projectPath string,
+	projectFile string,
 
 ) (*unstructured.Unstructured, error) {
 	_outputUrl := services.DestRepoUrl
@@ -463,6 +467,12 @@ func (c *Service) checkAndRecreatePipelineRun(
 	}
 	if codeType == "" {
 		codeType = "none"
+	}
+	if strings.Trim(projectFile, " ") == "" {
+		projectFile = `none`
+	}
+	if strings.Trim(projectPath, " ") == "" {
+		projectPath = `none`
 	}
 	pipelineRunParams := params{
 		Namespace:            common.YceCloudExtensionsOps,
@@ -477,6 +487,8 @@ func (c *Service) checkAndRecreatePipelineRun(
 		DestRepoUrl:          _outputUrl,
 		CacheRepoUrl:         services.CacheRepoUrl,
 		CodeType:             codeType,
+		ProjectPath:          projectPath,
+		ProjectFile:          projectFile,
 	}
 	defaultObj, err := services.Render(pipelineRunParams, pipelineRunTpl)
 	if err != nil {

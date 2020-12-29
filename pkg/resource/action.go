@@ -19,6 +19,10 @@ type Request struct {
 	RetryCount uint32 `json:"retryCount"`
 	// Output output image repository
 	Output string `json:"output"`
+	// ProjectPath the main project has contain many sub project
+	ProjectPath string `json:"projectPath"`
+	// ProjectFile build the project user was custom the dockerfile path
+	ProjectFile string `json:"projectFile"`
 }
 
 type RequestCd struct {

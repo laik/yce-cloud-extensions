@@ -19,13 +19,16 @@ type CI struct {
 }
 
 type CISpec struct {
-	GitURL     *string `json:"gitUrl"`
-	Branch     *string `json:"branch"`
-	CommitID   *string `json:"commitId"`
-	CodeType   string  `json:"codeType"`
-	RetryCount *uint32 `json:"retryCount"`
-	Output     *string `json:"output"`
-	Done       bool    `json:"done"`
+	GitURL      *string `json:"gitUrl"`
+	Branch      *string `json:"branch"`
+	CommitID    *string `json:"commitId"`
+	CodeType    string  `json:"codeType"`
+	RetryCount  *uint32 `json:"retryCount"`
+	Output      *string `json:"output"`
+	ProjectPath string  `json:"projectPath"`
+	ProjectFile string  `json:"projectFile"`
+
+	Done bool `json:"done"`
 	// fsm request field
 	FlowId    *string  `json:"flowId"`
 	StepName  *string  `json:"stepName"`
