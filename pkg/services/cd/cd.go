@@ -234,6 +234,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		MemoryRequests: *cd.Spec.MEMRequests,
 		Commands:       cd.Spec.ArtifactInfo.Command,
 		Args:           cd.Spec.ArtifactInfo.Arguments,
+		Environments:   cd.Spec.ArtifactInfo.Environments,
 		ServicePorts:   cd.Spec.ArtifactInfo.ServicePorts,
 		ServiceType:    "ClusterIP",
 		Coordinates:    createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
