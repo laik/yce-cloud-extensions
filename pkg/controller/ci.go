@@ -160,6 +160,7 @@ func (s *CIController) Run(addr string) error {
 		// {git-project-name}-{Branch}
 		project, err := tools.ExtractProject(request.GitUrl)
 		var name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", project, request.Branch), "_", "-", -1))
+		name = strings.ToLower(strings.Replace(name, ".", "-", -1))
 
 		// 构造一个CI的结构
 		ci := &v1.CI{
