@@ -576,5 +576,7 @@ func (c *Service) checkAndRecreatePipelineResource(name, gitUrl, branch string) 
 }
 
 func pipelineRunName(project, branch string) string {
-	return strings.Replace(strings.ToLower(fmt.Sprintf("%s-%s", project, branch)), "_", "-", -1)
+	return strings.Replace(
+		strings.Replace(strings.ToLower(
+			fmt.Sprintf("%s-%s", project, branch)), "_", "-", -1), ".", "-", -1)
 }
