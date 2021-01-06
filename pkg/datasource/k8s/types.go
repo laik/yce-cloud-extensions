@@ -29,6 +29,7 @@ const (
 
 	// Stone deployment resource
 	Stone = "stones"
+	ConfigMap = "configmaps"
 
 	// Kubernetes
 	ServiceAccount = "serviceaccounts"

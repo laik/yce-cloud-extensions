@@ -161,6 +161,14 @@ func (s *CDController) Run(addr string) error {
 			}
 		}
 
+		configVolumes := make([]v1.ConfigVolumes,0)
+		if len(request.ConfigVolumes) > 0{
+			if err = json.Unmarshal([]byte(request.ConfigVolumes), &configVolumes);err!=nil{
+				requestErr(g,err)
+				return
+			}
+		}
+
 		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
 		name = strings.ToLower(strings.Replace(name, "_", "-", -1))
 
@@ -179,6 +187,7 @@ func (s *CDController) Run(addr string) error {
 				DeployNamespace: &request.DeployNamespace,
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    artifactInfo,
+				ConfigVolumes:   &configVolumes,
 				DeployType:      &request.DeployType,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,

@@ -1,6 +1,7 @@
 package cd
 
 import (
+	"fmt"
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
 	"gopkg.in/yaml.v2"
@@ -23,6 +24,11 @@ func TestStoneConstructor(t *testing.T) {
 			MemoryLimit:    "30m",
 			CpuRequests:    "1000m",
 			MemoryRequests: "300m",
+			ConfigVolumes: []v1.ConfigVolumes{
+				{MountName: "volume-test",
+					MountPath: "/var/www/",
+					CMItems:   []v1.CMItems{}},
+			},
 			ServicePorts: []v1.ServicePorts{
 				{Name: "port", Protocol: "TCP", Port: 80, TargetPort: 80},
 			},
@@ -42,6 +48,7 @@ func TestStoneConstructor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Printf("%s", o.Data)
 
 	expected := `kind: Stone
 apiVersion: nuwa.nip.io/v1
@@ -97,6 +104,53 @@ spec:
         targetPort: 80
     type: ClusterIP`
 
+	src, dest := make(map[string]interface{}), make(map[string]interface{})
+	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal(o.Data, dest); err != nil || err1 != nil {
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+	}
+
+	if !reflect.DeepEqual(src, dest) {
+		t.Fatal("expect not equal")
+	}
+
+}
+
+func TestConfigMapConstructor(t *testing.T) {
+	o := &services.Output{}
+	tt = template.Must(tt.Parse(configMapTpl))
+	err := tt.Execute(o,
+		&params{
+			ConfigVolumes: []v1.ConfigVolumes{
+				{MountName: "volume-test",
+					MountPath: "/var/www/",
+					CMItems: []v1.CMItems{
+						{VolumePath: "main.html",
+							VolumeName: "html",
+							VolumeData: "hello world"},
+						{VolumePath: "ok.py",
+							VolumeName: "py",
+							VolumeData: "go"},
+					}},
+			},
+		})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%s", o.Data)
+
+	expected := `kind: ConfigMap
+apiVersion: nuwa.nip.io/v1
+metadata:
+  name: 
+data:
+  html: hello world
+  py: go
+  `
 	src, dest := make(map[string]interface{}), make(map[string]interface{})
 	if err, err1 := yaml.Unmarshal([]byte(expected), src), yaml.Unmarshal(o.Data, dest); err != nil || err1 != nil {
 		if err != nil {
