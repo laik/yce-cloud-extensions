@@ -223,6 +223,11 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		)
 	}
 
+	configVolumes := make([]v1.ConfigVolumes,0)
+	if cd.Spec.ConfigVolumes == nil{
+		cd.Spec.ConfigVolumes = &configVolumes
+	}
+
 	params := &params{
 		CDName:         cd.GetName(),
 		Namespace:      *cd.Spec.DeployNamespace,
@@ -232,6 +237,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		MemoryLimit:    *cd.Spec.MEMLimit,
 		CpuRequests:    *cd.Spec.CPURequests,
 		MemoryRequests: *cd.Spec.MEMRequests,
+		ConfigVolumes:  *cd.Spec.ConfigVolumes,
 		Commands:       cd.Spec.ArtifactInfo.Command,
 		Args:           cd.Spec.ArtifactInfo.Arguments,
 		Environments:   cd.Spec.ArtifactInfo.Environments,
@@ -241,9 +247,20 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
+	if len(*cd.Spec.ConfigVolumes) != 0 {
+		unstructuredConfigMap, err := services.Render(params, configMapTpl)
+		if err != nil {
+			return fmt.Errorf("configMap render error (%s)", err)
+		}
+		_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.ConfigMap, *cd.Spec.ServiceName, unstructuredConfigMap, true)
+		if err != nil {
+			return fmt.Errorf("%s configMap apply error (%s)\n", common.ERROR, err)
+		}
+	}
+
 	unstructuredStone, err := services.Render(params, stoneTpl)
 	if err != nil {
-		return fmt.Errorf("render error (%s)", err)
+		return fmt.Errorf("stone render error (%s)", err)
 	}
 
 	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, true)

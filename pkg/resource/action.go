@@ -42,6 +42,7 @@ type RequestCd struct {
 	CPURequests     string `json:"cpuRequests"`
 	MEMRequests     string `json:"memRequests"`
 	Replicas        uint32 `json:"replicas"`
+	ConfigVolumes	string `json:"configVolumes"`
 }
 
 type Response struct {

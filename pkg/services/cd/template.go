@@ -4,7 +4,8 @@ import (
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 )
 
-const stoneTpl = `kind: Stone
+const (
+	stoneTpl = `kind: Stone
 apiVersion: nuwa.nip.io/v1
 metadata:
   name: {{.Name}}
@@ -51,6 +52,28 @@ spec:
               cpu: {{.CpuRequests}}
               memory: {{.MemoryRequests}}
           imagePullPolicy: Always
+          {{- if .ConfigVolumes}}
+          volumeMounts:
+            {{range .ConfigVolumes}}
+            - name: {{.MountName}}
+              mountPath: {{.MountPath}}
+            {{ end }}
+          {{- end }}
+      {{- if .ConfigVolumes}}
+      volumes:
+        {{range .ConfigVolumes}}
+        - name: {{.MountName}}
+          configMap:
+            name: {{$.Name}}
+            {{- if .CMItems}}
+            items:
+              {{range .CMItems}}
+              - key: {{.VolumeName}}
+                path: {{.VolumePath}}
+              {{ end }}
+            {{- end }}
+        {{ end }}
+      {{- end }}
   strategy: Release
   coordinates:
 {{range .Coordinates}}
@@ -73,6 +96,19 @@ spec:
 {{end}}
     type: {{.ServiceType}}`
 
+	configMapTpl = `kind: ConfigMap
+apiVersion: nuwa.nip.io/v1
+metadata:
+  name: {{.Name}}
+data:
+  {{range .ConfigVolumes}}
+  {{range .CMItems}}
+  {{.VolumeName}}: {{.VolumeData}}
+  {{ end }}
+  {{ end }}
+`
+)
+
 type params struct {
 	Namespace      string
 	Name           string
@@ -89,6 +125,7 @@ type params struct {
 	Coordinates    []ResourceLimitStruct
 	CDName         string
 	Environments   []v1.Envs
+	ConfigVolumes  []v1.ConfigVolumes
 }
 
 type NamespaceResourceLimit struct {
