@@ -125,6 +125,7 @@ func TestConfigMapConstructor(t *testing.T) {
 	tt = template.Must(tt.Parse(configMapTpl))
 	err := tt.Execute(o,
 		&params{
+			Name: "dxp",
 			ConfigVolumes: []v1.ConfigVolumes{
 				{MountName: "volume-test",
 					MountPath: "/var/www/",
@@ -146,7 +147,7 @@ func TestConfigMapConstructor(t *testing.T) {
 	expected := `kind: ConfigMap
 apiVersion: nuwa.nip.io/v1
 metadata:
-  name: 
+  name: dxp
 data:
   html: hello world
   py: go
