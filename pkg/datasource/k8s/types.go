@@ -101,4 +101,6 @@ func rsInit(rs *Resources) {
 	rs.register(ServiceAccount, schema.GroupVersionResource{Group: "", Version: "v1", Resource: ServiceAccount})
 	rs.register(Namespace, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Namespace})
 	rs.register(Pod, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Pod})
+
+	rs.register(ConfigMap, schema.GroupVersionResource{Group: "", Version: "v1", Resource: ConfigMap})
 }
