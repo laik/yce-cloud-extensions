@@ -54,26 +54,26 @@ spec:
                             type: string
                           envvalue:
                             type: string
-                configVolumes:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      mountName:
-                        type: string
-                      mountPath:
-                        type: string
-                      cmItems:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            volumeName:
-                              type: string
-                            volumePath:
-                              type: string
-                            volumeData:
-                              type: string
+                    configVolumes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          mountName:
+                            type: string
+                          mountPath:
+                            type: string
+                          cmItems:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                volumeName:
+                                  type: string
+                                volumePath:
+                                  type: string
+                                volumeData:
+                                  type: string
                 deployType:
                   type: string
                 cpuLimit:

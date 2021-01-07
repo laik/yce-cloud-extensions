@@ -151,20 +151,13 @@ func (s *CDController) Run(addr string) error {
 		}
 
 		artifactInfo := &v1.ArtifactInfo{
-			Command:   make([]string, 0),
-			Arguments: make([]string, 0),
+			Command:       make([]string, 0),
+			Arguments:     make([]string, 0),
+			ConfigVolumes: make([]v1.ConfigVolumes, 0),
 		}
 		if len(request.ArtifactInfo) > 0 {
 			if err = json.Unmarshal([]byte(request.ArtifactInfo), artifactInfo); err != nil {
 				requestErr(g, err)
-				return
-			}
-		}
-
-		configVolumes := make([]v1.ConfigVolumes,0)
-		if len(request.ConfigVolumes) > 0{
-			if err = json.Unmarshal([]byte(request.ConfigVolumes), &configVolumes);err!=nil{
-				requestErr(g,err)
 				return
 			}
 		}
@@ -187,7 +180,6 @@ func (s *CDController) Run(addr string) error {
 				DeployNamespace: &request.DeployNamespace,
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    artifactInfo,
-				ConfigVolumes:   &configVolumes,
 				DeployType:      &request.DeployType,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,

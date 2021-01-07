@@ -224,8 +224,8 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	configVolumes := make([]v1.ConfigVolumes,0)
-	if cd.Spec.ConfigVolumes == nil{
-		cd.Spec.ConfigVolumes = &configVolumes
+	if cd.Spec.ArtifactInfo.ConfigVolumes == nil{
+		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
 	}
 
 	params := &params{
@@ -237,7 +237,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		MemoryLimit:    *cd.Spec.MEMLimit,
 		CpuRequests:    *cd.Spec.CPURequests,
 		MemoryRequests: *cd.Spec.MEMRequests,
-		ConfigVolumes:  *cd.Spec.ConfigVolumes,
+		ConfigVolumes:  cd.Spec.ArtifactInfo.ConfigVolumes,
 		Commands:       cd.Spec.ArtifactInfo.Command,
 		Args:           cd.Spec.ArtifactInfo.Arguments,
 		Environments:   cd.Spec.ArtifactInfo.Environments,
@@ -247,7 +247,8 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
-	if len(*cd.Spec.ConfigVolumes) != 0 {
+
+	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {
 		unstructuredConfigMap, err := services.Render(params, configMapTpl)
 		if err != nil {
 			return fmt.Errorf("configMap render error (%s)", err)

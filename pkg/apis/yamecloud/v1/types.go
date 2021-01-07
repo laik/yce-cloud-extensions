@@ -56,22 +56,29 @@ type CD struct {
 }
 
 type CDSpec struct {
-	ServiceName     *string          `json:"serviceName"`
-	ServiceImage    *string          `json:"serviceImage"`
-	DeployNamespace *string          `json:"deployNamespace"`
-	ArtifactInfo    *ArtifactInfo    `json:"artifactInfo"`
-	ConfigVolumes   *[]ConfigVolumes `json:"configVolumes"`
-	DeployType      *string          `json:"deployType"`
-	CPULimit        *string          `json:"cpuLimit"`
-	MEMLimit        *string          `json:"memLimit"`
-	CPURequests     *string          `json:"cpuRequests"`
-	MEMRequests     *string          `json:"memRequests"`
-	Replicas        uint32           `json:"replicas"`
-	Done            bool             `json:"done"`
-	FlowId          *string          `json:"flowId"`
-	StepName        *string          `json:"stepName"`
-	AckStates       []string         `json:"ackStates"`
-	UUID            *string          `json:"uuid"`
+	ServiceName     *string       `json:"serviceName"`
+	ServiceImage    *string       `json:"serviceImage"`
+	DeployNamespace *string       `json:"deployNamespace"`
+	ArtifactInfo    *ArtifactInfo `json:"artifactInfo"`
+	DeployType      *string       `json:"deployType"`
+	CPULimit        *string       `json:"cpuLimit"`
+	MEMLimit        *string       `json:"memLimit"`
+	CPURequests     *string       `json:"cpuRequests"`
+	MEMRequests     *string       `json:"memRequests"`
+	Replicas        uint32        `json:"replicas"`
+	Done            bool          `json:"done"`
+	FlowId          *string       `json:"flowId"`
+	StepName        *string       `json:"stepName"`
+	AckStates       []string      `json:"ackStates"`
+	UUID            *string       `json:"uuid"`
+}
+
+type ArtifactInfo struct {
+	Command       []string        `json:"command"`
+	Arguments     []string        `json:"arguments"`
+	Environments  []Envs          `json:"environments"`
+	ServicePorts  []ServicePorts  `json:"servicePorts"`
+	ConfigVolumes []ConfigVolumes `json:"configVolumes"`
 }
 
 type ConfigVolumes struct {
@@ -84,13 +91,6 @@ type CMItems struct {
 	VolumeName string `json:"volumeName"`
 	VolumePath string `json:"volumePath"`
 	VolumeData string `json:"volumeData"`
-}
-
-type ArtifactInfo struct {
-	Command      []string       `json:"command"`
-	Arguments    []string       `json:"arguments"`
-	Environments []Envs         `json:"environments"`
-	ServicePorts []ServicePorts `json:"servicePorts"`
 }
 
 type ServicePorts struct {
