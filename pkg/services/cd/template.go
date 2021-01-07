@@ -97,7 +97,7 @@ spec:
     type: {{.ServiceType}}`
 
 	configMapTpl = `kind: ConfigMap
-apiVersion: nuwa.nip.io/v1
+apiVersion: v1
 metadata:
   name: {{.Name}}
 data:
