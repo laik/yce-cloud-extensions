@@ -3,6 +3,8 @@ package cd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/laik/yce-cloud-extensions/pkg/utils/dict"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strings"
 
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
@@ -223,8 +225,8 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		)
 	}
 
-	configVolumes := make([]v1.ConfigVolumes,0)
-	if cd.Spec.ArtifactInfo.ConfigVolumes == nil{
+	configVolumes := make([]v1.ConfigVolumes, 0)
+	if cd.Spec.ArtifactInfo.ConfigVolumes == nil {
 		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
 	}
 
@@ -247,12 +249,20 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
-
 	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {
-		unstructuredConfigMap, err := services.Render(params, configMapTpl)
-		if err != nil {
-			return fmt.Errorf("configMap render error (%s)", err)
+
+		configMap := make(map[string]interface{})
+		dict.Set(configMap, "apiVersion", "v1")
+		dict.Set(configMap, "metadata.name", *cd.Spec.ServiceName)
+
+		dataValue := make(map[string]interface{})
+		for _, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
+			for _, cnItem := range configVolume.CMItems {
+				dataValue[cnItem.VolumeName] = cnItem.VolumeData
+			}
 		}
+		dict.Set(configMap, "data", dataValue)
+		unstructuredConfigMap := &unstructured.Unstructured{Object: configMap}
 		_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.ConfigMap, *cd.Spec.ServiceName, unstructuredConfigMap, true)
 		if err != nil {
 			return fmt.Errorf("%s configMap apply error (%s)\n", common.ERROR, err)
