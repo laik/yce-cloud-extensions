@@ -129,7 +129,7 @@ spec:
       env:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
-      image: 'yametech/checkdocker:v0.1.2'
+      image: 'yametech/checkdocker:v0.1.3'
       name: step1
       resources: {}
     - args:
