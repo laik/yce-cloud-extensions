@@ -121,7 +121,7 @@ spec:
   steps:
     - args:
         - '-url'
-        - /workspace/git
+        - /workspace/git/$(params.dockerfile)
         - '-codetype'
         - $(params.code_type)
         - '-path'
@@ -134,7 +134,7 @@ spec:
       resources: {}
     - args:
         - '--dockerfile=/workspace/git/$(params.dockerfile)'
-        - '--context=/workspace/git'
+        - '--context=/workspace/git/$(params.sub_dir)'
         - '--insecure'
         - '--force'
         - '--destination=$(params.dest_repo_url)/$(params.project_name):$(params.project_version)'
