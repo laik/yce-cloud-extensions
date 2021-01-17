@@ -23,6 +23,8 @@ type Request struct {
 	ProjectPath string `json:"projectPath"`
 	// ProjectFile build the project user was custom the dockerfile path
 	ProjectFile string `json:"projectFile"`
+	// ServiceName named by neZha server
+	ServiceName string `json:"serviceName"`
 }
 
 type RequestCd struct {
