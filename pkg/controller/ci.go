@@ -134,6 +134,29 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 	}
 }
 
+func (s *CIController) checkAndReconcileCi(name string) error {
+	obj, err := s.Get(common.YceCloudExtensionsOps, k8s.CI, name)
+	if err != nil {
+		return err
+	}
+	ci := &v1.CI{}
+	if err := tools.UnstructuredObjectToInstanceObj(obj, ci); err != nil {
+		return err
+	}
+	if ci.Spec.Done == false {
+		ci.Spec.AckStates = append(ci.Spec.AckStates, v1.FailState)
+		ci.Spec.Done = true
+		ciUnstructured, err := tools.InstanceToUnstructured(ci)
+		if err != nil {
+			return err
+		}
+		if _, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, ciUnstructured, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *CIController) Run(addr string) error {
 	gin.SetMode("debug")
 	route := gin.New()
@@ -160,7 +183,15 @@ func (s *CIController) Run(addr string) error {
 		// {git-project-name}-{Branch}
 		project, err := tools.ExtractProject(request.GitUrl)
 		var name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", project, request.Branch), "_", "-", -1))
+		if len(request.ServiceName) > 0 {
+			name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", request.ServiceName, name), "_", "-", -1))
+		}
 		name = strings.ToLower(strings.Replace(name, ".", "-", -1))
+
+		err = s.checkAndReconcileCi(name)
+		if err != nil {
+			fmt.Printf("check last ci error%s", err)
+		}
 
 		// 构造一个CI的结构
 		ci := &v1.CI{
