@@ -244,7 +244,7 @@ kind: Task
 metadata:
   labels:
     namespace: {{.Namespace}}
-  name: yce-cloud-extensions-task
+  name: yce-cloud-extensions-java-task
   namespace: {{.Namespace}}
 spec:
   params:
