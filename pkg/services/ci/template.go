@@ -238,6 +238,187 @@ data:
   password: {{.RegistryPassword}}
   username: {{.RegistryUsername}}
 type: kubernetes.io/basic-auth`
+
+	javaTaskTpl = `apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  labels:
+    namespace: {{.Namespace}}
+  name: yce-cloud-extensions-task
+  namespace: {{.Namespace}}
+spec:
+  params:
+    - default: none
+      name: project_name
+      type: string
+    - default: none
+      name: project_version
+      type: string
+    - default: 'yametech/kaniko:v0.24.0'
+      name: build_tool_image
+      type: string
+    - default: none
+      name: dest_repo_url
+      type: string
+    - default: none
+      name: code_type
+      type: string
+    - default: none
+      name: sub_dir
+      type: string
+    - default: "Dockerfile"
+      name: dockerfile
+      type: string
+  resources:
+    inputs:
+      - name: git
+        type: git
+    outputs: []
+  steps:
+    - args:
+        - '-url'
+        - /workspace/git
+        - '-codetype'
+        - $(params.code_type)
+        - '-path'
+        - $(params.sub_dir)
+      env:
+        - name: DOCKER_CONFIG
+          value: /tekton/home/.docker
+      image: 'yametech/checkdocker:v0.1.3'
+      name: step1
+      resources: {}
+    - args:
+        - '--dockerfile=/workspace/git/$(params.dockerfile)'
+        - '--context=/workspace/git'
+        - '--insecure'
+        - '--force'
+        - '--destination=$(params.dest_repo_url)/$(params.project_name):$(params.project_version)'
+        - '--skip-tls-verify'
+        - '--skip-unused-stages=true'
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker"
+      image: $(params.build_tool_image)
+      name: step2
+      resources: {}
+      command: []
+      script: ''
+      workingDir: ''
+  volumes:
+    - emptyDir: {}
+      name: build-path`
+
+	javaGraphTpl = `kind: TektonGraph
+apiVersion: fuxi.nip.io/v1
+metadata:
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+  labels:
+    namespace: {{.Namespace}}
+spec:
+  data: >-
+    {"nodes":[{"id":"1-1","x":20,"y":20,"role":0,"taskName":"yce-cloud-extensions-java-task","anchorPoints":[[0,0.5],[1,0.5]],"addnode":true,"subnode":true,"type":"pipeline-node","linkPoints":{"right":true,"left":true},"style":{}}],"edges":[],"combos":[],"groups":[]}
+  width: 1629
+  height: 592`
+
+	javaPipelineTpl = `apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  annotations:
+    fuxi.nip.io/tektongraphs: {{.PipelineGraph}}
+    namespace: {{.Namespace}}
+  labels:
+    namespace: {{.Namespace}}
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+spec:
+  params:
+    - default: ''
+      name: project_name
+      type: string
+    - default: ''
+      name: project_version
+      type: string
+    - default: ''
+      name: build_tool_image
+      type: string
+    - default: ''
+      name: dest_repo_url
+      type: string
+    - default: ''
+      name: code_type
+      type: string
+    - default: ''
+      name: sub_dir
+      type: string
+    - default: "Dockerfile"
+      name: dockerfile
+      type: string
+  resources:
+    - name: git-addr
+      type: git
+  tasks:
+    - name: yce-cloud-extensions-java-task
+      params:
+        - name: project_name
+          value: $(params.project_name)
+        - name: project_version
+          value: $(params.project_version)
+        - name: build_tool_image
+          value: $(params.build_tool_image)
+        - name: dest_repo_url
+          value: $(params.dest_repo_url)
+        - name: code_type
+          value: $(params.code_type)
+        - name: sub_dir
+          value: $(params.sub_dir)
+        - name: dockerfile
+          value: $(params.dockerfile)
+      resources:
+        inputs:
+          - name: git
+            resource: git-addr
+      taskRef:
+        kind: Task
+        name: {{.TaskName}}`
+
+	javaPipelineRunTpl = `apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  annotations:
+    fuxi.nip.io/run-tektongraphs: {{.PipelineRunGraph}}
+    fuxi.nip.io/tektongraphs: {{.PipelineGraph}}
+    namespace: {{.Namespace}}
+  labels:
+    namespace: {{.Namespace}}
+    tekton.dev/pipeline: {{.PipelineName}}
+  name: {{.Name}}
+  namespace: {{.Namespace}}
+spec:
+  params:
+    - name: project_name
+      value: {{.ProjectName}}
+    - name: project_version
+      value: {{.ProjectVersion}}
+    - name: build_tool_image
+      value: {{.BuildToolImage}}
+    - name: code_type
+      value: {{.CodeType}}
+    - name: dest_repo_url
+      value: {{.DestRepoUrl}}
+    - name: sub_dir
+      value: {{.ProjectPath}}
+    - name: dockerfile
+      value: {{.ProjectFile}}
+  pipelineRef:
+    name: {{.PipelineName}}
+  resources:
+    - name: git-addr
+      resourceRef:
+        name: {{.PipelineResourceName}}
+  serviceAccountName: default
+  timeout: 1h0m0s`
 )
 
 type params struct {

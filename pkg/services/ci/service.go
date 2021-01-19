@@ -192,11 +192,21 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 		return fmt.Errorf("reconcile ci check and recreate config error (%s)", err)
 	}
 
-	prName := pipelineRunName(projectName, *ci.Spec.Branch)
+	prName := pipelineRunName(ci.ObjectMeta.Name)
 	// first create pipelineResource with pipelineRun same name
 	obj, err := c.checkAndRecreatePipelineResource(prName, *ci.Spec.GitURL, *ci.Spec.Branch)
 	if err != nil {
 		return err
+	}
+
+	// Check codeType
+	if ci.Spec.CodeType == "java-maven" {
+		err = c.reconcileJavaCI(ci, projectName)
+		if err != nil {
+			return err
+		} else {
+			return nil
+		}
 	}
 
 	// check and reconcile task normal
@@ -240,6 +250,220 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 
 	_ = obj
 	return nil
+}
+
+func (c *Service) reconcileJavaCI(ci *v1.CI, projectName string) error {
+	prName := pipelineRunName(ci.ObjectMeta.Name)
+	// check and reconcile task normal
+	if _, err := c.checkAndRecreateJavaTask(); err != nil {
+		return err
+	}
+
+	// check and reconcile pipeline graph
+	_, err := c.checkAndRecreateJavaGraph(services.JavaPipelineGraphName)
+	if err != nil {
+		return err
+	}
+	// check and reconcile pipeline
+	if _, err := c.checkAndRecreateJavaPipeline(); err != nil {
+		return err
+	}
+
+	// check and reconcile pipelineRun graph
+	pipelineRunGraphName := fmt.Sprintf("%s-%s", services.JavaPipelineGraphName, prName)
+	pipelineRunGraph, err := c.checkAndRecreateJavaGraph(pipelineRunGraphName)
+	if err != nil {
+		return err
+	}
+
+	// check and reconcile pipelineRun
+	_, err = c.checkAndRecreateJavaPipelineRun(
+		prName,
+		projectName,
+		*ci.Spec.CommitID,
+		pipelineRunGraphName,
+		prName,
+		*ci.Spec.Output,
+		pipelineRunGraph,
+		ci.Spec.CodeType,
+		ci.Spec.ProjectPath,
+		ci.Spec.ProjectFile,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Service) checkAndRecreateJavaTask() (*unstructured.Unstructured, error) {
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName)
+	taskParams := params{
+		Namespace: common.YceCloudExtensionsOps,
+		Name:      services.JavaTaskName,
+	}
+	defaultTask, err := services.Render(taskParams, javaTaskTpl)
+	if err != nil {
+		return nil, err
+	}
+	if !errors.IsNotFound(err) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName, defaultTask, false)
+		if err != nil {
+			return nil, err
+		}
+		return obj, nil
+	}
+
+	if !tools.CompareSpecByUnstructured(defaultTask, obj) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName, defaultTask, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return obj, nil
+}
+
+func (c *Service) checkAndRecreateJavaGraph(name string) (*unstructured.Unstructured, error) {
+	graphParams := params{
+		Namespace: common.YceCloudExtensionsOps,
+		Name:      name,
+	}
+	obj, err := services.Render(graphParams, javaGraphTpl)
+	if err != nil {
+		return nil, err
+	}
+	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, name, obj, false)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
+func (c *Service) checkAndRecreateJavaPipeline() (*unstructured.Unstructured, error) {
+	getObj, err := c.Get(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaTaskName)
+	pipelineParams := params{
+		Namespace:     common.YceCloudExtensionsOps,
+		Name:          services.JavaPipelineName,
+		PipelineGraph: services.JavaPipelineGraphName,
+		TaskName:      services.JavaTaskName,
+	}
+	obj, err := services.Render(pipelineParams, javaPipelineTpl)
+	if err != nil {
+		return nil, err
+	}
+
+	if errors.IsNotFound(err) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaPipelineName, obj, false)
+		if err != nil {
+			return nil, err
+		}
+		return obj, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !tools.CompareSpecByUnstructured(obj, getObj) {
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaPipelineName, obj, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return obj, nil
+}
+
+func (c *Service) checkAndRecreateJavaPipelineRun(
+	name,
+	projectName,
+	projectVersion,
+	pipelineRunGraphName,
+	pipelineResourceName,
+	outputUrl string,
+	pipelineRunGraph *unstructured.Unstructured,
+	codeType string,
+	projectPath string,
+	projectFile string,
+
+) (*unstructured.Unstructured, error) {
+	_outputUrl := services.DestRepoUrl
+	if outputUrl != "" {
+		_outputUrl = outputUrl
+	}
+	if codeType == "" {
+		codeType = "none"
+	}
+	if strings.Trim(projectFile, " ") == "" || projectFile == "" {
+		projectFile = `Dockerfile`
+	}
+	if strings.Trim(projectPath, " ") == "" || projectPath == "" {
+		projectPath = `"*"`
+	}
+	pipelineRunParams := params{
+		Namespace:            common.YceCloudExtensionsOps,
+		Name:                 name,
+		PipelineName:         services.JavaPipelineName,
+		PipelineGraph:        services.JavaPipelineGraphName,
+		PipelineRunGraph:     pipelineRunGraphName,
+		PipelineResourceName: pipelineResourceName,
+		ProjectName:          projectName,
+		ProjectVersion:       projectVersion,
+		BuildToolImage:       services.BuildToolImage,
+		DestRepoUrl:          _outputUrl,
+		CodeType:             codeType,
+		ProjectPath:          projectPath,
+		ProjectFile:          projectFile,
+	}
+	defaultObj, err := services.Render(pipelineRunParams, javaPipelineRunTpl)
+	if err != nil {
+		return nil, err
+	}
+
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// create pipelineRun
+			obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
+			if err != nil {
+				return nil, err
+			}
+			goto OWNER_REF
+		}
+		return nil, err
+	}
+
+	err = c.Delete(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
+	if err != nil {
+		return nil, err
+	}
+	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
+	if err != nil {
+		return nil, err
+	}
+	pipelineRunGraph, err = c.checkAndRecreateJavaGraph(pipelineRunGraph.GetName())
+	if err != nil {
+		return nil, err
+	}
+
+OWNER_REF:
+	// reset graph owner
+	pipelineRunGraphBytes, err := pipelineRunGraph.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineRunGraphObj, err := tools.SetObjectOwner(pipelineRunGraphBytes, obj.GetAPIVersion(), obj.GetKind(), obj.GetName(), string(obj.GetUID()))
+	if err != nil {
+		return nil, err
+	}
+
+	pipelineRunGraphObj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, pipelineRunGraphName, pipelineRunGraphObj, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return obj, err
 }
 
 func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, error) {
@@ -575,8 +799,8 @@ func (c *Service) checkAndRecreatePipelineResource(name, gitUrl, branch string) 
 	return obj, nil
 }
 
-func pipelineRunName(project, branch string) string {
+func pipelineRunName(name string) string {
 	return strings.Replace(
 		strings.Replace(strings.ToLower(
-			fmt.Sprintf("%s-%s", project, branch)), "_", "-", -1), ".", "-", -1)
+			name), "_", "-", -1), ".", "-", -1)
 }
