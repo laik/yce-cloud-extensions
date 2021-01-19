@@ -15,6 +15,12 @@ const (
 	PipelineGraphName      = "yce-cloud-extensions-graph"
 	TektonGitConfigName    = "yce-cloud-extensions-git-config"
 	TektonDockerConfigName = "yce-cloud-extensions-docker-config"
+
+	// For java template
+	JavaTaskName = "yce-cloud-extensions-java-task"
+	JavaPipelineGraphName      = "yce-cloud-extensions-java-graph"
+	JavaPipelineName           = "yce-cloud-extensions-java-pipeline"
+
 )
 
 var (
