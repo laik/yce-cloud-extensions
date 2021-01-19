@@ -254,7 +254,7 @@ spec:
     - default: none
       name: project_version
       type: string
-    - default: 'yametech/kaniko:v0.24.0'
+    - default: 'yametech/kaniko:v1.3.0'
       name: build_tool_image
       type: string
     - default: none
