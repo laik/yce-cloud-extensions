@@ -84,6 +84,7 @@ type ArtifactInfo struct {
 type ConfigVolumes struct {
 	MountName string    `json:"mountName"`
 	MountPath string    `json:"mountPath"`
+	SubPath   string    `json:"subPath"`
 	CMItems   []CMItems `json:"cmItems"`
 }
 
