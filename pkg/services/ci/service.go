@@ -193,6 +193,9 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	}
 
 	prName := pipelineRunName(ci.ObjectMeta.Name)
+	if len(prName) > 62 {
+		prName = prName[len(prName)-62:]
+	}
 	// first create pipelineResource with pipelineRun same name
 	obj, err := c.checkAndRecreatePipelineResource(prName, *ci.Spec.GitURL, *ci.Spec.Branch)
 	if err != nil {
@@ -254,6 +257,9 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 
 func (c *Service) reconcileJavaCI(ci *v1.CI, projectName string) error {
 	prName := pipelineRunName(ci.ObjectMeta.Name)
+	if len(prName) > 62 {
+		prName = prName[len(prName)-62:]
+	}
 	// check and reconcile task normal
 	if _, err := c.checkAndRecreateJavaTask(); err != nil {
 		return err
