@@ -57,6 +57,7 @@ spec:
             {{range .ConfigVolumes}}
             - name: {{.MountName}}
               mountPath: {{.MountPath}}
+              subPath: {{.SubPath}}
             {{ end }}
           {{- end }}
       {{- if .ConfigVolumes}}

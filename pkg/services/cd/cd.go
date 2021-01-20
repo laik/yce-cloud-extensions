@@ -228,6 +228,16 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	configVolumes := make([]v1.ConfigVolumes, 0)
 	if cd.Spec.ArtifactInfo.ConfigVolumes == nil {
 		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
+	} else {
+		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
+			pathStr := strings.Split(configVolume.MountPath, "/")
+			if len(pathStr) < 2 {
+				configVolume.SubPath = ""
+				continue
+			} else {
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = pathStr[len(pathStr)-1]
+			}
+		}
 	}
 
 	params := &params{
