@@ -188,6 +188,9 @@ func (s *CIController) Run(addr string) error {
 		}
 		name = strings.ToLower(strings.Replace(name, ".", "-", -1))
 
+		if len(name) > 62 {
+			name = name[len(name)-62:]
+		}
 		err = s.checkAndReconcileCi(name)
 		if err != nil {
 			fmt.Printf("check last ci error%s", err)
