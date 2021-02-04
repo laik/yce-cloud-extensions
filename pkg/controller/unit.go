@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -19,7 +20,9 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	"github.com/tidwall/gjson"
 	"io"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	"net/http"
 	"strconv"
 	"strings"
@@ -48,22 +51,32 @@ func (s *UnitController) response2echoer(data map[string]interface{}) error {
 }
 
 func (s *UnitController) getLog(unit *v1.Unit) (string, error) {
-	buf := bytes.NewBufferString("")
-	bufTime := time.Now()
-	err := Logs(common.YceCloudExtensionsOps,
-		unit.Name,
-		"step2",
-		false,
-		false,
-		false,
-		0,
-		&bufTime,
-		0, 0, buf,
-	)
-	if err != nil{
-		return "",err
+
+	pipelineRun, err := s.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, unit.Name)
+	if err != nil {
+		return "", err
 	}
-	return buf.String(),nil
+	pipelineRunBytes, err := pipelineRun.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	podName := gjson.Get(string(pipelineRunBytes), "status.taskRuns.*.status.podName").String()
+	req := s.Clientset.CoreV1().Pods(common.YceCloudExtensionsOps).GetLogs(podName, &corev1.PodLogOptions{
+		Container: "step-step2",
+	})
+	podLogs, err := req.Stream(context.Background())
+	if err != nil {
+		//return "error in opening stream"
+	}
+	defer podLogs.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		//return "error in copy information from podLogs to buf"
+	}
+
+	return buf.String(), nil
 }
 
 func (s *UnitController) reconcile(unit *v1.Unit) error {
@@ -159,28 +172,25 @@ func (s *UnitController) recv(stop <-chan struct{}, errC chan<- error) {
 	}
 }
 
-func Logs(
+func logs(restClient rest.Interface,
 	namespace, name, container string,
 	follow bool, previous bool, timestamps bool,
 	sinceSeconds int64,
 	sinceTime *time.Time,
 	limitBytes int64,
 	tailLines int64,
-	out io.Writer,
-) error {
-	req := common.SharedK8sClient.
-		ClientV1.
-		CoreV1().
-		RESTClient().
-		Get().
-		Namespace(namespace).
-		Name(name).
-		Resource("pods").
-		SubResource("log").
-		Param("container", container).
-		Param("follow", strconv.FormatBool(follow)).
-		Param("previous", strconv.FormatBool(previous)).
-		Param("timestamps", strconv.FormatBool(timestamps))
+	out io.Writer) error {
+	req :=
+		restClient.
+			Get().
+			Namespace(namespace).
+			Name(name).
+			Resource("pods").
+			SubResource("log").
+			Param("container", container).
+			Param("follow", strconv.FormatBool(follow)).
+			Param("previous", strconv.FormatBool(previous)).
+			Param("timestamps", strconv.FormatBool(timestamps))
 
 	if sinceSeconds != 0 {
 		req.Param("sinceSeconds", strconv.FormatInt(sinceSeconds, 10))
