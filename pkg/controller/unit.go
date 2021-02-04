@@ -88,7 +88,7 @@ func (s *UnitController) reconcile(unit *v1.Unit) error {
 		AckState: unit.Spec.AckStates[0],
 		UUID:     *unit.Spec.UUID,
 		Done:     unit.Spec.Done,
-		Log:      bufString,
+		Data:     bufString,
 	}
 
 	respBytes, err := json.Marshal(resp)
