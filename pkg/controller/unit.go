@@ -22,11 +22,8 @@ import (
 	"io"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type UnitController struct {
@@ -66,14 +63,14 @@ func (s *UnitController) getLog(unit *v1.Unit) (string, error) {
 	})
 	podLogs, err := req.Stream(context.Background())
 	if err != nil {
-		//return "error in opening stream"
+		return "", err
 	}
 	defer podLogs.Close()
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
-		//return "error in copy information from podLogs to buf"
+		return "", err
 	}
 
 	return buf.String(), nil
@@ -170,48 +167,6 @@ func (s *UnitController) recv(stop <-chan struct{}, errC chan<- error) {
 			s.lastVersion = unit.GetResourceVersion()
 		}
 	}
-}
-
-func logs(restClient rest.Interface,
-	namespace, name, container string,
-	follow bool, previous bool, timestamps bool,
-	sinceSeconds int64,
-	sinceTime *time.Time,
-	limitBytes int64,
-	tailLines int64,
-	out io.Writer) error {
-	req :=
-		restClient.
-			Get().
-			Namespace(namespace).
-			Name(name).
-			Resource("pods").
-			SubResource("log").
-			Param("container", container).
-			Param("follow", strconv.FormatBool(follow)).
-			Param("previous", strconv.FormatBool(previous)).
-			Param("timestamps", strconv.FormatBool(timestamps))
-
-	if sinceSeconds != 0 {
-		req.Param("sinceSeconds", strconv.FormatInt(sinceSeconds, 10))
-	}
-	if sinceTime != nil {
-		req.Param("sinceTime", sinceTime.Format(time.RFC3339))
-	}
-	if limitBytes != 0 {
-		req.Param("limitBytes", strconv.FormatInt(limitBytes, 10))
-	}
-	if tailLines != 0 {
-		req.Param("tailLines", strconv.FormatInt(tailLines, 10))
-	}
-	readCloser, err := req.Stream(context.Background())
-	if err != nil {
-		return err
-	}
-	defer readCloser.Close()
-	_, err = io.Copy(out, readCloser)
-
-	return err
 }
 
 func (s *UnitController) checkAndReconcileUnit(name string) error {
