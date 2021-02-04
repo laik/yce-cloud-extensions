@@ -164,6 +164,9 @@ func (s *CDController) Run(addr string) error {
 
 		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
 		name = strings.ToLower(strings.Replace(name, "_", "-", -1))
+		var serviceName = strings.ToLower(strings.Replace(
+			strings.Replace(request.ServiceName, ".", "-", -1), "_", "-", -1))
+
 
 		// 构造一个CD的结构
 		cd := &v1.CD{
@@ -176,7 +179,7 @@ func (s *CDController) Run(addr string) error {
 				Namespace: common.YceCloudExtensions,
 			},
 			Spec: v1.CDSpec{
-				ServiceName:     &request.ServiceName,
+				ServiceName:     &serviceName,
 				DeployNamespace: &request.DeployNamespace,
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    artifactInfo,
