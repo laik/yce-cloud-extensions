@@ -55,16 +55,14 @@ type Response struct {
 	Done     bool   `json:"done"`
 }
 
-
 type UnitResponse struct {
 	FlowId   string `json:"flowId"`
 	StepName string `json:"stepName"`
 	AckState string `json:"ackState"`
 	UUID     string `json:"uuid"`
 	Done     bool   `json:"done"`
-	Log      string `json:"log"`
+	Data     string `json:"data"`
 }
-
 
 type RequestUnit struct {
 	FlowId    string   `json:"flowId"`
