@@ -13,8 +13,9 @@ type ResourceLister interface {
 
 const (
 	// CI && CD YameCloudExtensions resources
-	CI = "cis"
-	CD = "cds"
+	CI   = "cis"
+	CD   = "cds"
+	UNIT = "units"
 
 	// Tekton resources
 	Pipeline         = "pipelines"
@@ -28,7 +29,7 @@ const (
 	TektonConfig = "secrets"
 
 	// Stone deployment resource
-	Stone = "stones"
+	Stone     = "stones"
 	ConfigMap = "configmaps"
 
 	// Kubernetes
@@ -83,6 +84,7 @@ func (m *Resources) GetGvr(s string) (schema.GroupVersionResource, error) {
 func rsInit(rs *Resources) {
 	rs.register(CI, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CI})
 	rs.register(CD, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CD})
+	rs.register(UNIT, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: UNIT})
 
 	rs.register(Stone, schema.GroupVersionResource{Group: "nuwa.nip.io", Version: "v1", Resource: Stone})
 
@@ -103,4 +105,5 @@ func rsInit(rs *Resources) {
 	rs.register(Pod, schema.GroupVersionResource{Group: "", Version: "v1", Resource: Pod})
 
 	rs.register(ConfigMap, schema.GroupVersionResource{Group: "", Version: "v1", Resource: ConfigMap})
+
 }

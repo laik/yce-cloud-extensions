@@ -2,10 +2,10 @@ package configure
 
 import (
 	"fmt"
-
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/datasource/k8s"
 	client "k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -34,6 +34,9 @@ type InstallConfigure struct {
 	client.Interface
 	// ResourceLister resource lister
 	k8s.ResourceLister
+
+	*kubernetes.Clientset
+	//*rest.RESTClient
 }
 
 func NewInstallConfigure(k8sResLister k8s.ResourceLister) (*InstallConfigure, error) {
@@ -60,10 +63,13 @@ func NewInstallConfigure(k8sResLister k8s.ResourceLister) (*InstallConfigure, er
 		return nil, err
 	}
 
+	clientSet, err := kubernetes.NewForConfig(resetConfig)
+
 	return &InstallConfigure{
 		CacheInformerFactory: cacheInformerFactory,
 		Interface:            cli,
 		RestConfig:           resetConfig,
 		ResourceLister:       k8sResLister,
+		Clientset:            clientSet,
 	}, nil
 }

@@ -17,10 +17,14 @@ const (
 	TektonDockerConfigName = "yce-cloud-extensions-docker-config"
 
 	// For java template
-	JavaTaskName = "yce-cloud-extensions-java-task"
-	JavaPipelineGraphName      = "yce-cloud-extensions-java-graph"
-	JavaPipelineName           = "yce-cloud-extensions-java-pipeline"
+	JavaTaskName          = "yce-cloud-extensions-java-task"
+	JavaPipelineGraphName = "yce-cloud-extensions-java-graph"
+	JavaPipelineName      = "yce-cloud-extensions-java-pipeline"
 
+	// For Unit template
+	UnitTaskName          = "yce-cloud-extensions-unit-task"
+	UnitPipelineGraphName = "yce-cloud-extensions-unit-graph"
+	UnitPipelineName      = "yce-cloud-extensions-unit-pipeline"
 )
 
 var (
