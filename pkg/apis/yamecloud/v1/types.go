@@ -114,8 +114,6 @@ type CDList struct {
 	Items []CD `json:"items"`
 }
 
-
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Unit struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -142,6 +140,37 @@ type UnitSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type UnitList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Unit `json:"items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type Sonar struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec SonarSpec `json:"spec"`
+}
+
+type SonarSpec struct {
+	GitURL   *string `json:"gitUrl"`
+	Branch   *string `json:"branch"`
+	Language *string `json:"language"`
+	ServiceName string `json:"serviceName"`
+
+
+	Done bool `json:"done"`
+	// fsm request field
+	FlowId    *string  `json:"flowId"`
+	StepName  *string  `json:"stepName"`
+	AckStates []string `json:"ackStates"`
+	UUID      *string  `json:"uuid"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type SonarList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 

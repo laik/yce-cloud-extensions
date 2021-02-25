@@ -78,3 +78,15 @@ type RequestUnit struct {
 	Command     string `json:"command"`
 	ServiceName string `json:"serviceName"`
 }
+
+type RequestSonar struct {
+	FlowId    string   `json:"flowId"`
+	StepName  string   `json:"stepName"`
+	AckStates []string `json:"ackStates"` //(SUCCESS | FAIL);
+	UUID      string   `json:"uuid"`
+
+	GitUrl      string `json:"gitUrl"`
+	Branch      string `json:"branch"`
+	Language    string `json:"language"`
+	ServiceName string `json:"serviceName"`
+}

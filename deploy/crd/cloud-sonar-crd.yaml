@@ -1,0 +1,69 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: sonars.yamecloud.io
+spec:
+  group: yamecloud.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                gitUrl:
+                  type: string
+                branch:
+                  type: string
+                language:
+                  type: string
+                serviceName:
+                  type: string
+                flowId:
+                  type: string
+                stepName:
+                  type: string
+                ackStates:
+                  type: array
+                  items:
+                    type: string
+                uuid:
+                  type: string
+                done:
+                  type: boolean
+      additionalPrinterColumns:
+        - name: GitUrl
+          type: string
+          jsonPath: .spec.gitUrl
+        - name: Branch
+          type: string
+          jsonPath: .spec.branch
+        - name: Language
+          type: string
+          jsonPath: .spec.language
+        - name: FlowId
+          type: string
+          jsonPath: .spec.flowId
+        - name: StepName
+          type: string
+          jsonPath: .spec.stepName
+        - name: AckStates
+          type: string
+          jsonPath: .spec.ackStates
+        - name: UUID
+          type: string
+          jsonPath: .spec.uuid
+        - name: Done
+          type: boolean
+          jsonPath: .spec.done
+  scope: Namespaced
+  names:
+    plural: sonars
+    singular: sonar
+    kind: SONAR
+    shortNames:
+      - sonar
