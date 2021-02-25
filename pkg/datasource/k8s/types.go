@@ -16,6 +16,7 @@ const (
 	CI   = "cis"
 	CD   = "cds"
 	UNIT = "units"
+	SONAR = "sonars"
 
 	// Tekton resources
 	Pipeline         = "pipelines"
@@ -85,6 +86,7 @@ func rsInit(rs *Resources) {
 	rs.register(CI, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CI})
 	rs.register(CD, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: CD})
 	rs.register(UNIT, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: UNIT})
+	rs.register(SONAR, schema.GroupVersionResource{Group: "yamecloud.io", Version: "v1", Resource: SONAR})
 
 	rs.register(Stone, schema.GroupVersionResource{Group: "nuwa.nip.io", Version: "v1", Resource: Stone})
 

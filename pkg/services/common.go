@@ -25,6 +25,11 @@ const (
 	UnitTaskName          = "yce-cloud-extensions-unit-task"
 	UnitPipelineGraphName = "yce-cloud-extensions-unit-graph"
 	UnitPipelineName      = "yce-cloud-extensions-unit-pipeline"
+
+	// For Sonar template
+	SonarTaskName          = "yce-cloud-extensions-sonar-task"
+	SonarPipelineGraphName = "yce-cloud-extensions-sonar-graph"
+	SonarPipelineName      = "yce-cloud-extensions-sonar-pipeline"
 )
 
 var (
