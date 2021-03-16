@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-
 	"github.com/laik/yce-cloud-extensions/pkg/common"
 	"github.com/laik/yce-cloud-extensions/pkg/configure"
 	ctl "github.com/laik/yce-cloud-extensions/pkg/controller"
@@ -13,7 +12,9 @@ func needInit() (*configure.InstallConfigure, error) {
 	if common.InCluster {
 		configure.SetTheAppRuntimeMode(configure.InCluster)
 	}
-	cfg, err := configure.NewInstallConfigure(k8s.NewResources(nil))
+	cfg, err := configure.NewInstallConfigure(k8s.NewResources([]string{
+		k8s.CI, k8s.Pipeline, k8s.PipelineRun, k8s.Task, k8s.TaskRun, k8s.PipelineResource, k8s.TektonGraph, k8s.TektonConfig,
+	}))
 	if err != nil {
 		return nil, err
 	}

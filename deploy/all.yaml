@@ -65,7 +65,7 @@ spec:
       labels:
         app: yce-cloud-extensions-cd
     spec:
-      serviceAccount: yce-cloud-extensions-ci
+      serviceAccount: yce-cloud-extensions-cd
       containers:
         - name: yce-cloud-extensions-cd
           args:
