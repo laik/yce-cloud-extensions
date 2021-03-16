@@ -1,4 +1,4 @@
-package ci
+package sonar
 
 import (
 	"encoding/base64"
@@ -26,8 +26,8 @@ var _ services.IService = &Service{}
 type Service struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
-	lastPRVersion string
-	lastCIVersion string
+	lastPRVersion   string
+	lastSONARVersion string
 }
 
 func NewService(cfg *configure.InstallConfigure, drs datasource.IDataSource) services.IService {
@@ -35,7 +35,7 @@ func NewService(cfg *configure.InstallConfigure, drs datasource.IDataSource) ser
 		InstallConfigure: cfg,
 		IDataSource:      drs,
 		lastPRVersion:    "0",
-		lastCIVersion:    "0",
+		lastSONARVersion:  "0",
 	}
 }
 
@@ -46,60 +46,60 @@ func (c *Service) Start(stop <-chan struct{}, errC chan<- error) {
 		errC <- err
 	}
 
-	ciChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.CI, c.lastCIVersion, 0, nil)
+	unitChan, err := c.Watch(common.YceCloudExtensionsOps, k8s.SONAR, c.lastSONARVersion, 0, nil)
 	if err != nil {
 		fmt.Printf("%s watch pipelineRun error (%s)\n", common.ERROR, err)
 		errC <- err
 	}
 
-	fmt.Printf("%s service ci start watch ci channel and pipeline run channel\n", common.INFO)
+	fmt.Printf("%s service sonar start watch sonar channel and pipeline run channel\n", common.INFO)
 
 	for {
 		select {
 		case <-stop:
-			fmt.Printf("%s service ci service get stop order\n", common.INFO)
+			fmt.Printf("%s service sonar service get stop order\n", common.INFO)
 			return
 		case pipelineRunEvent, ok := <-pipelineRunChan:
 			if !ok {
-				fmt.Printf("%s service ci pipeline run channel closed\n", common.ERROR)
-				errC <- fmt.Errorf("service ci watch pipeline run channel closed")
+				fmt.Printf("%s service sonar pipeline run channel closed\n", common.ERROR)
+				errC <- fmt.Errorf("service sonar watch pipeline run channel closed")
 				return
 			}
 			if pipelineRunEvent.Type == watch.Deleted {
 				continue
 			}
 			if err := c.reconcilePipelineRun(pipelineRunEvent.Object); err != nil {
-				fmt.Printf("%s service ci watch pipeline run channel recv handle error (%s)\n", common.ERROR, err)
+				fmt.Printf("%s service sonar watch pipeline run channel recv handle error (%s)\n", common.ERROR, err)
 			}
 			// record watch version
 			result, err := tools.GetObjectValue(pipelineRunEvent.Object, "metadata.resourceVersion")
 			if err != nil {
-				fmt.Printf("%s service ci watch pipelinerun resource version not found\n", common.ERROR)
+				fmt.Printf("%s service sonar watch pipelinerun resource version not found\n", common.ERROR)
 				continue
 			}
 			c.lastPRVersion = result.String()
 
-		case ciEvent, ok := <-ciChan:
+		case unitEvent, ok := <-unitChan:
 			if !ok {
-				fmt.Printf("%s service ci channel closed\n", common.ERROR)
-				errC <- fmt.Errorf("service watch ci channel closed")
+				fmt.Printf("%s service sonar channel closed\n", common.ERROR)
+				errC <- fmt.Errorf("service watch sonar channel closed")
 				return
 			}
 			// ignore delete event
-			if ciEvent.Type == watch.Deleted {
+			if unitEvent.Type == watch.Deleted {
 				continue
 			}
 
-			ciObj := &v1.CI{}
-			if err := tools.RuntimeObjectToInstance(ciEvent.Object, ciObj); err != nil {
-				fmt.Printf("%s service ci channel recv object can't not convert to ci object (%s)\n", common.ERROR, err)
+			sonarObj := &v1.Sonar{}
+			if err := tools.RuntimeObjectToInstance(unitEvent.Object, sonarObj); err != nil {
+				fmt.Printf("%s service sonar channel recv object can't not convert to sonar object (%s)\n", common.ERROR, err)
 				continue
 			}
 
-			if err := c.reconcileCI(ciObj); err != nil {
-				fmt.Printf("%s service ci channel reconcil object (%s) error (%s)\n", common.ERROR, ciObj.GetName(), err)
+			if err := c.reconcileSonar(sonarObj); err != nil {
+				fmt.Printf("%s service sonar channel reconcil object (%s) error (%s)\n", common.ERROR, sonarObj.GetName(), err)
 			}
-			c.lastCIVersion = ciObj.GetResourceVersion()
+			c.lastSONARVersion = sonarObj.GetResourceVersion()
 		}
 	}
 }
@@ -141,30 +141,30 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 		return nil
 	}
 
-	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.CI, pipelineRunName)
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.SONAR, pipelineRunName)
 	if err != nil {
-		return fmt.Errorf("get ci %s", err)
+		return fmt.Errorf("get sonar %s", err)
 	}
-	ci := &v1.CI{}
-	if err := tools.UnstructuredObjectToInstanceObj(obj, ci); err != nil {
+	sonar := &v1.Sonar{}
+	if err := tools.UnstructuredObjectToInstanceObj(obj, sonar); err != nil {
 		return err
 	}
 
-	ci.Spec.AckStates = ci.Spec.AckStates[:0]
+	sonar.Spec.AckStates = sonar.Spec.AckStates[:0]
 	switch {
 	case conditions[0].Reason == succeeded && conditions[0].Status == "True" && conditions[0].Type == succeeded: // successed
-		ci.Spec.Done = true
-		ci.Spec.AckStates = append(ci.Spec.AckStates, v1.SuccessState)
+		sonar.Spec.Done = true
+		sonar.Spec.AckStates = append(sonar.Spec.AckStates, v1.SuccessState)
 	case conditions[0].Reason == failed && conditions[0].Status == "False" && conditions[0].Type == succeeded: // failed
-		ci.Spec.Done = true
-		ci.Spec.AckStates = append(ci.Spec.AckStates, v1.FailState)
+		sonar.Spec.Done = true
+		sonar.Spec.AckStates = append(sonar.Spec.AckStates, v1.FailState)
 	}
 
-	ciUnstructured, err := tools.InstanceToUnstructured(ci)
+	ciUnstructured, err := tools.InstanceToUnstructured(sonar)
 	if err != nil {
 		return err
 	}
-	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.CI, pipelineRunName, ciUnstructured, false); err != nil {
+	if _, _, err := c.Apply(common.YceCloudExtensionsOps, k8s.SONAR, pipelineRunName, ciUnstructured, false); err != nil {
 		return err
 	}
 
@@ -172,42 +172,32 @@ func (c *Service) reconcilePipelineRun(runtimeObject runtime.Object) error {
 }
 
 // Generator Tekton Task/Pipeline/PipelineResource/PipelineRun/Config...
-func (c *Service) reconcileCI(ci *v1.CI) error {
-	if ci.Spec.Done {
+func (c *Service) reconcileSonar(sonar *v1.Sonar) error {
+	if sonar.Spec.Done {
 		return nil
 	}
-	projectName, err := tools.ExtractProject(*ci.Spec.GitURL)
+	projectName, err := tools.ExtractProject(*sonar.Spec.GitURL)
 	if err != nil {
-		return fmt.Errorf("illegal project name extract from git url (%s)", *ci.Spec.GitURL)
+		return fmt.Errorf("illegal project name extract from git url (%s)", *sonar.Spec.GitURL)
 	}
 
 	// Check Secret Config install
 	_, err = c.checkAndRecreateGitConfig()
 	if err != nil {
-		return fmt.Errorf("reconcile ci check and recreate config error (%s)", err)
+		return fmt.Errorf("reconcile unit check and recreate config error (%s)", err)
 	}
 	// Check Secret Config install
 	_, err = c.checkAndRecreateRegistryConfig()
 	if err != nil {
-		return fmt.Errorf("reconcile ci check and recreate config error (%s)", err)
+		return fmt.Errorf("reconcile unit check and recreate config error (%s)", err)
 	}
 
-	prName := pipelineRunName(ci.ObjectMeta.Name)
+	prName := pipelineRunName(sonar.ObjectMeta.Name)
 
 	// first create pipelineResource with pipelineRun same name
-	obj, err := c.checkAndRecreatePipelineResource(prName, *ci.Spec.GitURL, *ci.Spec.Branch)
+	obj, err := c.checkAndRecreatePipelineResource(prName, *sonar.Spec.GitURL, *sonar.Spec.Branch)
 	if err != nil {
 		return err
-	}
-
-	// Check codeType
-	if ci.Spec.CodeType == "java-maven" {
-		err = c.reconcileJavaCI(ci, projectName)
-		if err != nil {
-			return err
-		} else {
-			return nil
-		}
 	}
 
 	// check and reconcile task normal
@@ -216,7 +206,7 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	}
 
 	// check and reconcile pipeline graph
-	_, err = c.checkAndRecreateGraph(services.PipelineGraphName)
+	_, err = c.checkAndRecreateGraph(services.SonarPipelineGraphName)
 	if err != nil {
 		return err
 	}
@@ -236,14 +226,10 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 	obj, err = c.checkAndRecreatePipelineRun(
 		prName,
 		projectName,
-		*ci.Spec.CommitID,
 		pipelineRunGraphName,
 		prName,
-		*ci.Spec.Output,
 		pipelineRunGraph,
-		ci.Spec.CodeType,
-		ci.Spec.ProjectPath,
-		ci.Spec.ProjectFile,
+		*sonar.Spec.Language,
 	)
 	if err != nil {
 		return err
@@ -251,223 +237,6 @@ func (c *Service) reconcileCI(ci *v1.CI) error {
 
 	_ = obj
 	return nil
-}
-
-func (c *Service) reconcileJavaCI(ci *v1.CI, projectName string) error {
-	prName := pipelineRunName(ci.ObjectMeta.Name)
-	if len(prName) > 62 {
-		prName = prName[len(prName)-62:]
-	}
-	// check and reconcile task normal
-	if _, err := c.checkAndRecreateJavaTask(); err != nil {
-		return err
-	}
-
-	// check and reconcile pipeline graph
-	_, err := c.checkAndRecreateJavaGraph(services.JavaPipelineGraphName)
-	if err != nil {
-		return err
-	}
-	// check and reconcile pipeline
-	if _, err := c.checkAndRecreateJavaPipeline(); err != nil {
-		return err
-	}
-
-	// check and reconcile pipelineRun graph
-	pipelineRunGraphName := fmt.Sprintf("%s-%s", services.JavaPipelineGraphName, prName)
-	pipelineRunGraph, err := c.checkAndRecreateJavaGraph(pipelineRunGraphName)
-	if err != nil {
-		return err
-	}
-
-	// check and reconcile pipelineRun
-	_, err = c.checkAndRecreateJavaPipelineRun(
-		prName,
-		projectName,
-		*ci.Spec.CommitID,
-		pipelineRunGraphName,
-		prName,
-		*ci.Spec.Output,
-		pipelineRunGraph,
-		ci.Spec.CodeType,
-		ci.Spec.ProjectPath,
-		ci.Spec.ProjectFile,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Service) checkAndRecreateJavaTask() (*unstructured.Unstructured, error) {
-	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName)
-	taskParams := params{
-		Namespace: common.YceCloudExtensionsOps,
-		Name:      services.JavaTaskName,
-	}
-	defaultTask, err := services.Render(taskParams, javaTaskTpl)
-	if err != nil {
-		return nil, err
-	}
-	if !errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName, defaultTask, false)
-		if err != nil {
-			return nil, err
-		}
-		return obj, nil
-	}
-
-	if !tools.CompareSpecByUnstructured(defaultTask, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.JavaTaskName, defaultTask, false)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return obj, nil
-}
-
-func (c *Service) checkAndRecreateJavaGraph(name string) (*unstructured.Unstructured, error) {
-	graphParams := params{
-		Namespace: common.YceCloudExtensionsOps,
-		Name:      name,
-	}
-	obj, err := services.Render(graphParams, javaGraphTpl)
-	if err != nil {
-		return nil, err
-	}
-	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, name, obj, false)
-	if err != nil {
-		return nil, err
-	}
-	return obj, nil
-}
-
-func (c *Service) checkAndRecreateJavaPipeline() (*unstructured.Unstructured, error) {
-	getObj, err := c.Get(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaTaskName)
-	pipelineParams := params{
-		Namespace:     common.YceCloudExtensionsOps,
-		Name:          services.JavaPipelineName,
-		PipelineGraph: services.JavaPipelineGraphName,
-		TaskName:      services.JavaTaskName,
-	}
-	obj, err := services.Render(pipelineParams, javaPipelineTpl)
-	if err != nil {
-		return nil, err
-	}
-
-	if errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaPipelineName, obj, false)
-		if err != nil {
-			return nil, err
-		}
-		return obj, nil
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !tools.CompareSpecByUnstructured(obj, getObj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.JavaPipelineName, obj, false)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return obj, nil
-}
-
-func (c *Service) checkAndRecreateJavaPipelineRun(
-	name,
-	projectName,
-	projectVersion,
-	pipelineRunGraphName,
-	pipelineResourceName,
-	outputUrl string,
-	pipelineRunGraph *unstructured.Unstructured,
-	codeType string,
-	projectPath string,
-	projectFile string,
-
-) (*unstructured.Unstructured, error) {
-	_outputUrl := services.DestRepoUrl
-	if outputUrl != "" {
-		_outputUrl = outputUrl
-	}
-	if codeType == "" {
-		codeType = "none"
-	}
-	if strings.Trim(projectFile, " ") == "" || projectFile == "" {
-		projectFile = `Dockerfile`
-	}
-	if strings.Trim(projectPath, " ") == "" || projectPath == "" {
-		projectPath = `"*"`
-	}
-	pipelineRunParams := params{
-		Namespace:            common.YceCloudExtensionsOps,
-		Name:                 name,
-		PipelineName:         services.JavaPipelineName,
-		PipelineGraph:        services.JavaPipelineGraphName,
-		PipelineRunGraph:     pipelineRunGraphName,
-		PipelineResourceName: pipelineResourceName,
-		ProjectName:          projectName,
-		ProjectVersion:       projectVersion,
-		BuildToolImage:       services.BuildToolImage,
-		DestRepoUrl:          _outputUrl,
-		CodeType:             codeType,
-		ProjectPath:          projectPath,
-		ProjectFile:          projectFile,
-	}
-	defaultObj, err := services.Render(pipelineRunParams, javaPipelineRunTpl)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// create pipelineRun
-			obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
-			if err != nil {
-				return nil, err
-			}
-			goto OWNER_REF
-		}
-		return nil, err
-	}
-
-	err = c.Delete(common.YceCloudExtensionsOps, k8s.PipelineRun, name)
-	if err != nil {
-		return nil, err
-	}
-	obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.PipelineRun, name, defaultObj, false)
-	if err != nil {
-		return nil, err
-	}
-	pipelineRunGraph, err = c.checkAndRecreateJavaGraph(pipelineRunGraph.GetName())
-	if err != nil {
-		return nil, err
-	}
-
-OWNER_REF:
-	// reset graph owner
-	pipelineRunGraphBytes, err := pipelineRunGraph.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	pipelineRunGraphObj, err := tools.SetObjectOwner(pipelineRunGraphBytes, obj.GetAPIVersion(), obj.GetKind(), obj.GetName(), string(obj.GetUID()))
-	if err != nil {
-		return nil, err
-	}
-
-	pipelineRunGraphObj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.TektonGraph, pipelineRunGraphName, pipelineRunGraphObj, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return obj, err
 }
 
 func (c *Service) checkAndRecreateRegistryConfig() (*unstructured.Unstructured, error) {
@@ -615,17 +384,17 @@ func (c *Service) checkAndRecreateGitConfig() (*unstructured.Unstructured, error
 }
 
 func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
-	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, services.TaskName)
+	obj, err := c.Get(common.YceCloudExtensionsOps, k8s.Task, services.SonarTaskName)
 	taskParams := params{
 		Namespace: common.YceCloudExtensionsOps,
-		Name:      services.TaskName,
+		Name:      services.SonarTaskName,
 	}
 	defaultTask, err := services.Render(taskParams, taskTpl)
 	if err != nil {
 		return nil, err
 	}
 	if !errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask, false)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.SonarTaskName, defaultTask, false)
 		if err != nil {
 			return nil, err
 		}
@@ -633,7 +402,7 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 	}
 
 	if !tools.CompareSpecByUnstructured(defaultTask, obj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.TaskName, defaultTask, false)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Task, services.SonarTaskName, defaultTask, false)
 		if err != nil {
 			return nil, err
 		}
@@ -642,12 +411,12 @@ func (c *Service) checkAndRecreateTask() (*unstructured.Unstructured, error) {
 }
 
 func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error) {
-	getObj, err := c.Get(common.YceCloudExtensionsOps, k8s.Pipeline, services.TaskName)
+	getObj, err := c.Get(common.YceCloudExtensionsOps, k8s.Pipeline, services.SonarTaskName)
 	pipelineParams := params{
 		Namespace:     common.YceCloudExtensionsOps,
-		Name:          services.PipelineName,
-		PipelineGraph: services.PipelineGraphName,
-		TaskName:      services.TaskName,
+		Name:          services.SonarPipelineName,
+		PipelineGraph: services.SonarPipelineGraphName,
+		TaskName:      services.SonarTaskName,
 	}
 	obj, err := services.Render(pipelineParams, pipelineTpl)
 	if err != nil {
@@ -655,7 +424,7 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 	}
 
 	if errors.IsNotFound(err) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj, false)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.SonarPipelineName, obj, false)
 		if err != nil {
 			return nil, err
 		}
@@ -667,7 +436,7 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 	}
 
 	if !tools.CompareSpecByUnstructured(obj, getObj) {
-		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.PipelineName, obj, false)
+		obj, _, err = c.Apply(common.YceCloudExtensionsOps, k8s.Pipeline, services.SonarPipelineName, obj, false)
 		if err != nil {
 			return nil, err
 		}
@@ -679,44 +448,28 @@ func (c *Service) checkAndRecreatePipeline() (*unstructured.Unstructured, error)
 func (c *Service) checkAndRecreatePipelineRun(
 	name,
 	projectName,
-	projectVersion,
 	pipelineRunGraphName,
-	pipelineResourceName,
-	outputUrl string,
+	pipelineResourceName string,
 	pipelineRunGraph *unstructured.Unstructured,
 	codeType string,
-	projectPath string,
-	projectFile string,
 
 ) (*unstructured.Unstructured, error) {
-	_outputUrl := services.DestRepoUrl
-	if outputUrl != "" {
-		_outputUrl = outputUrl
-	}
 	if codeType == "" {
-		codeType = "none"
+		codeType = "other"
 	}
-	if strings.Trim(projectFile, " ") == "" || projectFile == "" {
-		projectFile = `Dockerfile`
-	}
-	if strings.Trim(projectPath, " ") == "" || projectPath == "" {
-		projectPath = `"*"`
-	}
+
 	pipelineRunParams := params{
 		Namespace:            common.YceCloudExtensionsOps,
 		Name:                 name,
-		PipelineName:         services.PipelineName,
-		PipelineGraph:        services.PipelineGraphName,
+		PipelineName:         services.SonarPipelineName,
+		PipelineGraph:        services.SonarPipelineGraphName,
 		PipelineRunGraph:     pipelineRunGraphName,
 		PipelineResourceName: pipelineResourceName,
 		ProjectName:          projectName,
-		ProjectVersion:       projectVersion,
 		BuildToolImage:       services.BuildToolImage,
-		DestRepoUrl:          _outputUrl,
 		CacheRepoUrl:         services.CacheRepoUrl,
-		CodeType:             codeType,
-		ProjectPath:          projectPath,
-		ProjectFile:          projectFile,
+		CodeType:             projectName,
+		Command:              projectName,
 	}
 	defaultObj, err := services.Render(pipelineRunParams, pipelineRunTpl)
 	if err != nil {

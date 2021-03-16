@@ -15,6 +15,21 @@ const (
 	PipelineGraphName      = "yce-cloud-extensions-graph"
 	TektonGitConfigName    = "yce-cloud-extensions-git-config"
 	TektonDockerConfigName = "yce-cloud-extensions-docker-config"
+
+	// For java template
+	JavaTaskName          = "yce-cloud-extensions-java-task"
+	JavaPipelineGraphName = "yce-cloud-extensions-java-graph"
+	JavaPipelineName      = "yce-cloud-extensions-java-pipeline"
+
+	// For Unit template
+	UnitTaskName          = "yce-cloud-extensions-unit-task"
+	UnitPipelineGraphName = "yce-cloud-extensions-unit-graph"
+	UnitPipelineName      = "yce-cloud-extensions-unit-pipeline"
+
+	// For Sonar template
+	SonarTaskName          = "yce-cloud-extensions-sonar-task"
+	SonarPipelineGraphName = "yce-cloud-extensions-sonar-graph"
+	SonarPipelineName      = "yce-cloud-extensions-sonar-pipeline"
 )
 
 var (

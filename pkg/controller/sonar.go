@@ -3,9 +3,6 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	v1 "github.com/laik/yce-cloud-extensions/pkg/apis/yamecloud/v1"
 	"github.com/laik/yce-cloud-extensions/pkg/common"
@@ -15,14 +12,16 @@ import (
 	"github.com/laik/yce-cloud-extensions/pkg/proc"
 	"github.com/laik/yce-cloud-extensions/pkg/resource"
 	"github.com/laik/yce-cloud-extensions/pkg/services"
-	servicesci "github.com/laik/yce-cloud-extensions/pkg/services/ci"
+	servicessonar "github.com/laik/yce-cloud-extensions/pkg/services/sonar"
 	client "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	httpclient "github.com/laik/yce-cloud-extensions/pkg/utils/http"
 	"github.com/laik/yce-cloud-extensions/pkg/utils/tools"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
+	"strings"
 )
 
-type CIController struct {
+type SonarController struct {
 	*configure.InstallConfigure
 	datasource.IDataSource
 	client.IClient
@@ -32,7 +31,7 @@ type CIController struct {
 	proc *proc.Proc
 }
 
-func (s *CIController) response2echoer(data map[string]interface{}) error {
+func (s *SonarController) response2echoer(data map[string]interface{}) error {
 	request := s.Post(common.EchoerAddr)
 	for k, v := range data {
 		request.Params(k, v)
@@ -43,17 +42,18 @@ func (s *CIController) response2echoer(data map[string]interface{}) error {
 	return nil
 }
 
-func (s *CIController) reconcile(ci *v1.CI) error {
-	if !ci.Spec.Done || len(ci.Spec.AckStates) == 0 {
+
+func (s *SonarController) reconcile(sonar *v1.Sonar) error {
+	if !sonar.Spec.Done || len(sonar.Spec.AckStates) == 0 {
 		return nil
 	}
 
 	resp := &resource.Response{
-		FlowId:   *ci.Spec.FlowId,
-		StepName: *ci.Spec.StepName,
-		AckState: ci.Spec.AckStates[0],
-		UUID:     *ci.Spec.UUID,
-		Done:     ci.Spec.Done,
+		FlowId:   *sonar.Spec.FlowId,
+		StepName: *sonar.Spec.StepName,
+		AckState: sonar.Spec.AckStates[0],
+		UUID:     *sonar.Spec.UUID,
+		Done:     sonar.Spec.Done,
 	}
 
 	respBytes, err := json.Marshal(resp)
@@ -70,8 +70,8 @@ func (s *CIController) reconcile(ci *v1.CI) error {
 	return s.response2echoer(data)
 }
 
-func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
-	list, err := s.List(common.YceCloudExtensionsOps, k8s.CI, "", 0, 0, nil)
+func (s *SonarController) recv(stop <-chan struct{}, errC chan<- error) {
+	list, err := s.List(common.YceCloudExtensionsOps, k8s.SONAR, "", 0, 0, nil)
 	if err != nil {
 		errC <- err
 		return
@@ -79,86 +79,85 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 
 	for _, item := range list.Items {
 		value := item
-		ci := &v1.CI{}
-		if err := tools.UnstructuredObjectToInstanceObj(&value, ci); err != nil {
+		unit := &v1.Sonar{}
+		if err := tools.UnstructuredObjectToInstanceObj(&value, unit); err != nil {
 			fmt.Printf("%s UnstructuredObjectToInstanceObj error (%s)", common.ERROR, err)
 			continue
 		}
-		if err := s.reconcile(ci); err != nil {
-			fmt.Printf("%s handle ci error (%s)\n", common.ERROR, err)
+		if err := s.reconcile(unit); err != nil {
+			fmt.Printf("%s handle sonar error (%s)\n", common.ERROR, err)
 			continue
 		}
 	}
 
-	ciList := &v1.CIList{}
-	if err := tools.UnstructuredListObjectToInstanceObjectList(list, ciList); err != nil {
+	sonarList := &v1.SonarList{}
+	if err := tools.UnstructuredListObjectToInstanceObjectList(list, sonarList); err != nil {
 		errC <- fmt.Errorf("UnstructuredListObjectToInstanceObjectList error (%s) (%v)", err, list)
 		return
 	}
 
-	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.CI, ciList.GetResourceVersion(), 0, nil)
+	eventChan, err := s.Watch(common.YceCloudExtensionsOps, k8s.SONAR, sonarList.GetResourceVersion(), 0, nil)
 	if err != nil {
 		errC <- err
 		return
 	}
 
-	fmt.Printf("%s ci controller start watch ci channel.....\n", common.INFO)
+	fmt.Printf("%s sonar controller start watch unit channel.....\n", common.INFO)
 
 	for {
 		select {
 		case <-stop:
-			fmt.Printf("%s ci controller stop\n", common.INFO)
+			fmt.Printf("%s sonar controller stop\n", common.INFO)
 			return
 
 		case item, ok := <-eventChan:
 			if !ok {
-				fmt.Printf("%s ci controller watch stone resource channel stop\n", common.ERROR)
-				errC <- fmt.Errorf("controller watch ci channel closed")
+				fmt.Printf("%s sonar controller watch stone resource channel stop\n", common.ERROR)
+				errC <- fmt.Errorf("controller watch sonar channel closed")
 				return
 			}
 
-			ci := &v1.CI{}
-			err := tools.RuntimeObjectToInstance(item.Object, ci)
+			sonar := &v1.Sonar{}
+			err := tools.RuntimeObjectToInstance(item.Object, sonar)
 			if err != nil {
 				fmt.Printf("%s RuntimeObjectToInstance error (%s)\n", common.WARN, err)
 				continue
 			}
 
-			if err := s.reconcile(ci); err != nil {
-				fmt.Printf("%s ci controller handle error (%s)\n", common.ERROR, err)
+			if err := s.reconcile(sonar); err != nil {
+				fmt.Printf("%s sonar controller handle error (%s)\n", common.ERROR, err)
 				continue
 			}
 
-			s.lastVersion = ci.GetResourceVersion()
+			s.lastVersion = sonar.GetResourceVersion()
 		}
 	}
 }
 
-func (s *CIController) checkAndReconcileCi(name string) error {
-	obj, err := s.Get(common.YceCloudExtensionsOps, k8s.CI, name)
+func (s *SonarController) checkAndReconcileSonar(name string) error {
+	obj, err := s.Get(common.YceCloudExtensionsOps, k8s.SONAR, name)
 	if err != nil {
 		return err
 	}
-	ci := &v1.CI{}
-	if err := tools.UnstructuredObjectToInstanceObj(obj, ci); err != nil {
+	sonar := &v1.Sonar{}
+	if err := tools.UnstructuredObjectToInstanceObj(obj, sonar); err != nil {
 		return err
 	}
-	if ci.Spec.Done == false {
-		ci.Spec.AckStates = append(ci.Spec.AckStates, v1.FailState)
-		ci.Spec.Done = true
-		ciUnstructured, err := tools.InstanceToUnstructured(ci)
+	if sonar.Spec.Done == false {
+		sonar.Spec.AckStates = append(sonar.Spec.AckStates, v1.FailState)
+		sonar.Spec.Done = true
+		sonarUnstructured, err := tools.InstanceToUnstructured(sonar)
 		if err != nil {
 			return err
 		}
-		if _, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, ciUnstructured, false); err != nil {
+		if _, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.SONAR, name, sonarUnstructured, false); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *CIController) Run(addr string) error {
-	gin.SetMode("debug")
+func (s *SonarController) Run(addr string) error {
 	route := gin.New()
 	route.Use(gin.Logger())
 
@@ -169,12 +168,12 @@ func (s *CIController) Run(addr string) error {
 			requestErr(g, err)
 			return
 		}
-		request := &resource.Request{}
+		request := &resource.RequestSonar{}
 		if err := json.Unmarshal(rawData, request); err != nil {
 			requestErr(g, err)
 			return
 		}
-		// 构造CI的参数
+		// 构造sonar的参数
 		if err := json.Unmarshal(rawData, request); err != nil {
 			requestErr(g, err)
 			return
@@ -186,53 +185,47 @@ func (s *CIController) Run(addr string) error {
 		if len(request.ServiceName) > 0 {
 			name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", request.ServiceName, name), "_", "-", -1))
 		}
-		name = strings.ToLower(strings.Replace(name, ".", "-", -1))
 
-		if len(name) > 62 {
-			name = name[len(name)-62:]
-		}
-		err = s.checkAndReconcileCi(name)
+		name = sonarPipelineRunName(name)
+
+		err = s.checkAndReconcileSonar(name)
 		if err != nil {
-			fmt.Printf("check last ci error%s", err)
+			fmt.Printf("check last sonar error %s", err)
 		}
 
-		// 构造一个CI的结构
-		ci := &v1.CI{
+		// 构造一个sonar的结构
+		sonar := &v1.Sonar{
 			TypeMeta: metav1.TypeMeta{
-				Kind:       "CI",
+				Kind:       "SONAR",
 				APIVersion: "yamecloud.io/v1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: common.YceCloudExtensionsOps,
 			},
-			Spec: v1.CISpec{
-				GitURL:      &request.GitUrl,
-				Branch:      &request.Branch,
-				CommitID:    &request.CommitID,
-				RetryCount:  &request.RetryCount,
-				Output:      &request.Output,
-				CodeType:    request.CodeType,
-				FlowId:      &request.FlowId,
-				StepName:    &request.StepName,
-				AckStates:   request.AckStates,
-				UUID:        &request.UUID,
-				ProjectPath: request.ProjectPath,
-				ProjectFile: request.ProjectFile,
-				Done:        false,
+			Spec: v1.SonarSpec{
+				GitURL:   &request.GitUrl,
+				Branch:   &request.Branch,
+				Language: &request.Language,
+
+				FlowId:    &request.FlowId,
+				StepName:  &request.StepName,
+				AckStates: request.AckStates,
+				UUID:      &request.UUID,
+				Done:      false,
 			},
 		}
 		// 转换成unstructured 类型
-		unstructured, err := tools.InstanceToUnstructured(ci)
+		unstructured, err := tools.InstanceToUnstructured(sonar)
 		if err != nil {
 			requestErr(g, err)
 			return
 		}
 		// 写入CRD配置
-		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.CI, name, unstructured, true)
+		obj, _, err := s.Apply(common.YceCloudExtensionsOps, k8s.SONAR, name, unstructured, true)
 		if err != nil {
 			internalApplyErr(g, err)
-			fmt.Printf("ci controller apply (%s) error (%s)\n", name, err)
+			fmt.Printf("sonar controller apply (%s) error (%s)\n", name, err)
 			return
 		}
 
@@ -249,14 +242,25 @@ func (s *CIController) Run(addr string) error {
 	return <-s.proc.Start()
 }
 
-func NewCIController(cfg *configure.InstallConfigure) Interface {
+func NewSonarController(cfg *configure.InstallConfigure) Interface {
 	drs := datasource.NewIDataSource(cfg)
-	return &CIController{
+	return &SonarController{
 		InstallConfigure: cfg,
-		IService:         servicesci.NewService(cfg, drs),
+		IService:         servicessonar.NewService(cfg, drs),
 		IClient:          httpclient.NewIClient(),
 		IDataSource:      drs,
 
 		proc: proc.NewProc(),
 	}
+}
+
+func sonarPipelineRunName(name string) string {
+	name = strings.Replace(
+		strings.Replace(strings.ToLower(
+			name), "_", "-", -1), ".", "-", -1)
+	name = fmt.Sprintf("%s-%s", name, "sonar")
+	if len(name) > 62 {
+		name = name[len(name)-62:]
+	}
+	return name
 }
