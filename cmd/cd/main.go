@@ -13,7 +13,16 @@ func needInit() (*configure.InstallConfigure, error) {
 		configure.SetTheAppRuntimeMode(configure.InCluster)
 	}
 	cfg, err := configure.NewInstallConfigure(k8s.NewResources([]string{
-		k8s.CI, k8s.Pipeline, k8s.PipelineRun, k8s.Task, k8s.TaskRun, k8s.PipelineResource, k8s.TektonGraph, k8s.TektonConfig,
+		k8s.CI,
+		k8s.Pipeline,
+		k8s.PipelineRun,
+		k8s.Task,
+		k8s.TaskRun,
+		k8s.PipelineResource,
+		k8s.TektonGraph,
+		k8s.TektonConfig,
+		k8s.SONAR,
+		k8s.UNIT,
 	}))
 	if err != nil {
 		return nil, err

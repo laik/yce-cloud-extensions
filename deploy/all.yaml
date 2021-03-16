@@ -72,7 +72,7 @@ spec:
             - '-incluster=true'
             - '-echoer=http://10.200.100.200:8080/step'
             - '-addr=0.0.0.0:8080'
-          image: harbor.ym/devops/cd:v0.1.0
+          image: yametech/cd:v0.1.3
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
