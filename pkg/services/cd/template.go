@@ -51,7 +51,7 @@ spec:
             requests:
               cpu: {{.CpuRequests}}
               memory: {{.MemoryRequests}}
-          imagePullPolicy: Always
+          imagePullPolicy: {{.Policy}}
           {{- if .ConfigVolumes}}
           volumeMounts:
             {{range .ConfigVolumes}}
@@ -118,6 +118,7 @@ type params struct {
 	MemoryLimit    string
 	CpuRequests    string
 	MemoryRequests string
+	Policy         string
 	Commands       []string
 	Args           []string
 	ServicePorts   []v1.ServicePorts

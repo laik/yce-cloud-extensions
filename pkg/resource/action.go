@@ -35,6 +35,7 @@ type RequestCd struct {
 	RetryCount uint32   `json:"retryCount"`
 
 	ServiceName     string `json:"serviceName"`
+	Policy          string `json:"policy"`
 	ServiceImage    string `json:"serviceImage"`
 	DeployNamespace string `json:"deployNamespace"`
 	ArtifactInfo    string `json:"artifactInfo"`

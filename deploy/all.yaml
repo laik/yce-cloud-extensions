@@ -187,4 +187,70 @@ spec:
             backend:
               serviceName: yce-cloud-extensions-unit
               servicePort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: yce-cloud-extensions-sonar
+  name: yce-cloud-extensions-sonar
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yce-cloud-extensions-sonar
+  template:
+    metadata:
+      labels:
+        app: yce-cloud-extensions-sonar
+    spec:
+      serviceAccount: yce-cloud-extensions-ci
+      containers:
+        - name: yce-cloud-extensions-sonar
+          args:
+            - '-registry-password=!QAZ@wsx123'
+            - '-incluster=true'
+            - '-echoer=http://10.200.65.192:8080/step'
+            - '-addr=0.0.0.0:8080'
+            - '-git-user=zhipinku'
+            - '-registry-user=dengxiaopeng'
+            - '-git-password=!QAZ@zpk123'
+          image: harbor.ym/devops/sonar:v0.1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: yce-cloud-extensions-sonar
+  name: yce-cloud-extensions-sonar
+  namespace: kube-system
+spec:
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: yce-cloud-extensions-sonar
+
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: yce-cloud-extensions-sonar
+  namespace: kube-system
+spec:
+  rules:
+    - host: yce-cloud-extensions-sonar.compass.ym
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: yce-cloud-extensions-sonar
+              servicePort: 8080
+
 
