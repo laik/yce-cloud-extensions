@@ -161,12 +161,13 @@ func (s *CDController) Run(addr string) error {
 				return
 			}
 		}
-
+		if len(request.Policy) == 0 {
+			request.Policy = "Always"
+		}
 		var name = fmt.Sprintf("%s-%s", request.ServiceName, request.DeployType)
 		name = strings.ToLower(strings.Replace(name, "_", "-", -1))
 		var serviceName = strings.ToLower(strings.Replace(
 			strings.Replace(request.ServiceName, ".", "-", -1), "_", "-", -1))
-
 
 		// 构造一个CD的结构
 		cd := &v1.CD{
@@ -184,6 +185,7 @@ func (s *CDController) Run(addr string) error {
 				ServiceImage:    &request.ServiceImage,
 				ArtifactInfo:    artifactInfo,
 				DeployType:      &request.DeployType,
+				Policy:          &request.Policy,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,
 				CPURequests:     &request.CPURequests,

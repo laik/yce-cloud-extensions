@@ -65,6 +65,7 @@ type CDSpec struct {
 	MEMLimit        *string       `json:"memLimit"`
 	CPURequests     *string       `json:"cpuRequests"`
 	MEMRequests     *string       `json:"memRequests"`
+	Policy          *string       `json:"policy"`
 	Replicas        uint32        `json:"replicas"`
 	Done            bool          `json:"done"`
 	FlowId          *string       `json:"flowId"`
@@ -155,11 +156,10 @@ type Sonar struct {
 }
 
 type SonarSpec struct {
-	GitURL   *string `json:"gitUrl"`
-	Branch   *string `json:"branch"`
-	Language *string `json:"language"`
-	ServiceName string `json:"serviceName"`
-
+	GitURL      *string `json:"gitUrl"`
+	Branch      *string `json:"branch"`
+	Language    *string `json:"language"`
+	ServiceName string  `json:"serviceName"`
 
 	Done bool `json:"done"`
 	// fsm request field

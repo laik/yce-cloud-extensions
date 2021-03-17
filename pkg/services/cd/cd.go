@@ -239,6 +239,10 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 			}
 		}
 	}
+	if cd.Spec.Policy == nil {
+		var policy = "Always"
+		cd.Spec.Policy = &policy
+	}
 
 	params := &params{
 		CDName:         cd.GetName(),
@@ -247,6 +251,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		Image:          *cd.Spec.ServiceImage,
 		CpuLimit:       *cd.Spec.CPULimit,
 		MemoryLimit:    *cd.Spec.MEMLimit,
+		Policy:         *cd.Spec.Policy,
 		CpuRequests:    *cd.Spec.CPURequests,
 		MemoryRequests: *cd.Spec.MEMRequests,
 		ConfigVolumes:  cd.Spec.ArtifactInfo.ConfigVolumes,

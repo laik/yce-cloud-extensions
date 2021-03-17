@@ -78,6 +78,8 @@ spec:
                   type: string
                 cpuLimit:
                   type: string
+                policy:
+                  type: string
                 memLimit:
                   type: string
                 cpuRequests:
