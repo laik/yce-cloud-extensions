@@ -186,11 +186,8 @@ func (s *CIController) Run(addr string) error {
 		if len(request.ServiceName) > 0 {
 			name = strings.ToLower(strings.Replace(fmt.Sprintf("%s-%s", request.ServiceName, name), "_", "-", -1))
 		}
-		name = strings.ToLower(strings.Replace(name, ".", "-", -1))
+		name = reCheckName(name)
 
-		if len(name) > 62 {
-			name = name[len(name)-62:]
-		}
 		err = s.checkAndReconcileCi(name)
 		if err != nil {
 			fmt.Printf("check last ci error%s", err)
@@ -259,4 +256,17 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 
 		proc: proc.NewProc(),
 	}
+}
+
+func reCheckName(name string) string {
+	name = strings.ToLower(strings.Replace(name, ".", "-", -1))
+	switch {
+	case len(name) > 62:
+		name = name[len(name)-62:]
+		fallthrough
+	case strings.HasPrefix(name, "-"):
+		name = name[1:]
+	}
+
+	return ""
 }
