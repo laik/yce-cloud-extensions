@@ -268,5 +268,5 @@ func reCheckName(name string) string {
 		name = name[1:]
 	}
 
-	return ""
+	return name
 }
