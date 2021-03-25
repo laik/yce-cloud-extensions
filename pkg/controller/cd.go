@@ -169,6 +169,12 @@ func (s *CDController) Run(addr string) error {
 		var serviceName = strings.ToLower(strings.Replace(
 			strings.Replace(request.ServiceName, ".", "-", -1), "_", "-", -1))
 
+		for i, configVolumes := range artifactInfo.ConfigVolumes {
+			mountName := configVolumes.MountName
+			mountName = reCheckName(mountName)
+			artifactInfo.ConfigVolumes[i].MountName = mountName
+		}
+
 		// 构造一个CD的结构
 		cd := &v1.CD{
 			TypeMeta: metav1.TypeMeta{
