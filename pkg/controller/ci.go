@@ -260,13 +260,11 @@ func NewCIController(cfg *configure.InstallConfigure) Interface {
 
 func reCheckName(name string) string {
 	name = strings.ToLower(strings.Replace(name, ".", "-", -1))
-	switch {
-	case len(name) > 62:
+	if len(name) > 62 {
 		name = name[len(name)-62:]
-		fallthrough
-	case strings.HasPrefix(name, "-"):
+	}
+	if strings.HasPrefix(name, "-") {
 		name = name[1:]
 	}
-
 	return name
 }
