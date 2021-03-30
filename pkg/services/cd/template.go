@@ -57,7 +57,9 @@ spec:
             {{range .ConfigVolumes}}
             - name: {{.MountName}}
               mountPath: {{.MountPath}}
+              {{- if .SubPath}}
               subPath: {{.SubPath}}
+              {{- end }}
             {{ end }}
           {{- end }}
       {{- if .ConfigVolumes}}
@@ -75,6 +77,20 @@ spec:
             {{- end }}
         {{ end }}
       {{- end }}
+  {{- if .IsStorage}}
+  volumeClaimTemplates:
+    - metadata:
+        creationTimestamp: null
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{.StorageCapacity}}
+        storageClassName: {{.StorageClass}}
+      status: {}
+  {{- end }}
   strategy: Release
   coordinates:
 {{range .Coordinates}}
@@ -111,23 +127,26 @@ data:
 )
 
 type params struct {
-	Namespace      string
-	Name           string
-	Image          string
-	CpuLimit       string
-	MemoryLimit    string
-	CpuRequests    string
-	MemoryRequests string
-	Policy         string
-	Commands       []string
-	Args           []string
-	ServicePorts   []v1.ServicePorts
-	ServiceType    string
-	UUID           string
-	Coordinates    []ResourceLimitStruct
-	CDName         string
-	Environments   []v1.Envs
-	ConfigVolumes  []v1.ConfigVolumes
+	Namespace           string
+	Name                string
+	Image               string
+	CpuLimit            string
+	MemoryLimit         string
+	CpuRequests         string
+	MemoryRequests      string
+	Policy              string
+	IsStorage           string
+	StorageCapacity     string
+	StorageClass        string
+	Commands            []string
+	Args                []string
+	ServicePorts        []v1.ServicePorts
+	ServiceType         string
+	UUID                string
+	Coordinates         []ResourceLimitStruct
+	CDName              string
+	Environments        []v1.Envs
+	ConfigVolumes       []v1.ConfigVolumes
 }
 
 type NamespaceResourceLimit struct {

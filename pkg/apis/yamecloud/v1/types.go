@@ -1,6 +1,8 @@
 package v1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 const (
 	SuccessState = "SUCCESS"
@@ -62,6 +64,7 @@ type CDSpec struct {
 	ArtifactInfo    *ArtifactInfo `json:"artifactInfo"`
 	DeployType      *string       `json:"deployType"`
 	CPULimit        *string       `json:"cpuLimit"`
+	StorageCapacity *string       `json:"storageCapacity"`
 	MEMLimit        *string       `json:"memLimit"`
 	CPURequests     *string       `json:"cpuRequests"`
 	MEMRequests     *string       `json:"memRequests"`
@@ -86,6 +89,7 @@ type ConfigVolumes struct {
 	MountName string    `json:"mountName"`
 	MountPath string    `json:"mountPath"`
 	SubPath   string    `json:"subPath"`
+	Kind      string    `json:"kind"`
 	CMItems   []CMItems `json:"cmItems"`
 }
 

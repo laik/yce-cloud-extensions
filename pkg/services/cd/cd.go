@@ -215,6 +215,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 			fmt.Sprintf(`{"namespace"":"%s","app"":"%s"}`, *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 		)
 	}
+	defaultStorageLimit := gjson.Get(string(namespaceBytes), `metadata.annotations.fuxi\.kubernetes\.io\/default_storage_limit`).String()
 
 	namespaceResourceLimitSlice := make(NamespaceResourceLimitSlice, 0)
 	if err := json.Unmarshal([]byte(resourceLimitContent), &namespaceResourceLimitSlice); err != nil {
@@ -231,7 +232,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	} else {
 		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
 			pathStr := strings.Split(configVolume.MountPath, "/")
-			if len(pathStr) < 2 {
+			if len(pathStr) < 2 || cd.Kind == "storage" {
 				configVolume.SubPath = ""
 				continue
 			} else {
@@ -244,24 +245,32 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		cd.Spec.Policy = &policy
 	}
 
+	IsStorage, err := c.reconcileCDStorage(cd, defaultStorageLimit)
+	if err != nil {
+		return err
+	}
+
 	params := &params{
-		CDName:         cd.GetName(),
-		Namespace:      *cd.Spec.DeployNamespace,
-		Name:           *cd.Spec.ServiceName,
-		Image:          *cd.Spec.ServiceImage,
-		CpuLimit:       *cd.Spec.CPULimit,
-		MemoryLimit:    *cd.Spec.MEMLimit,
-		Policy:         *cd.Spec.Policy,
-		CpuRequests:    *cd.Spec.CPURequests,
-		MemoryRequests: *cd.Spec.MEMRequests,
-		ConfigVolumes:  cd.Spec.ArtifactInfo.ConfigVolumes,
-		Commands:       cd.Spec.ArtifactInfo.Command,
-		Args:           cd.Spec.ArtifactInfo.Arguments,
-		Environments:   cd.Spec.ArtifactInfo.Environments,
-		ServicePorts:   cd.Spec.ArtifactInfo.ServicePorts,
-		ServiceType:    "ClusterIP",
-		Coordinates:    createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
-		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
+		CDName:          cd.GetName(),
+		Namespace:       *cd.Spec.DeployNamespace,
+		Name:            *cd.Spec.ServiceName,
+		Image:           *cd.Spec.ServiceImage,
+		CpuLimit:        *cd.Spec.CPULimit,
+		MemoryLimit:     *cd.Spec.MEMLimit,
+		Policy:          *cd.Spec.Policy,
+		IsStorage:       IsStorage,
+		StorageCapacity: *cd.Spec.StorageCapacity,
+		StorageClass:    defaultStorageLimit,
+		CpuRequests:     *cd.Spec.CPURequests,
+		MemoryRequests:  *cd.Spec.MEMRequests,
+		ConfigVolumes:   cd.Spec.ArtifactInfo.ConfigVolumes,
+		Commands:        cd.Spec.ArtifactInfo.Command,
+		Args:            cd.Spec.ArtifactInfo.Arguments,
+		Environments:    cd.Spec.ArtifactInfo.Environments,
+		ServicePorts:    cd.Spec.ArtifactInfo.ServicePorts,
+		ServiceType:     "ClusterIP",
+		Coordinates:     createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
+		UUID:            fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
 	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {
@@ -272,6 +281,9 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 
 		dataValue := make(map[string]interface{})
 		for _, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
+			if configVolume.Kind == "storage" {
+				continue
+			}
 			for _, cnItem := range configVolume.CMItems {
 				dataValue[cnItem.VolumeName] = cnItem.VolumeData
 			}
@@ -295,6 +307,25 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	return nil
+}
+
+func (c *Service) reconcileCDStorage(cd *v1.CD, defaultStorageLimit string) (string, error) {
+	var isStorage string
+	for _, configVolumes := range cd.Spec.ArtifactInfo.ConfigVolumes {
+		if configVolumes.Kind == "storage" {
+			isStorage = "need"
+		}
+	}
+	if cd.Spec.StorageCapacity == nil {
+		var storageCapacity = ""
+		cd.Spec.StorageCapacity = &storageCapacity
+	} else {
+		if *cd.Spec.StorageCapacity != "" && defaultStorageLimit == "" {
+			return "", fmt.Errorf("namespace (%s) not allow storage mount", *cd.Spec.DeployNamespace)
+		}
+	}
+	return isStorage, nil
+
 }
 
 func NewCDService(cfg *configure.InstallConfigure, dsrc datasource.IDataSource) *Service {

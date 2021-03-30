@@ -28,7 +28,11 @@ func TestStoneConstructor(t *testing.T) {
 				{MountName: "volume-test",
 					MountPath: "/var/www/",
 					CMItems:   []v1.CMItems{}},
+
 			},
+			IsStorage:"1213",
+			StorageCapacity:"200Gi",
+			StorageClass:"kube-ceph-xfs",
 			ServicePorts: []v1.ServicePorts{
 				{Name: "port", Protocol: "TCP", Port: 80, TargetPort: 80},
 			},

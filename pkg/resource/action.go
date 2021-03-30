@@ -39,6 +39,7 @@ type RequestCd struct {
 	ServiceImage    string `json:"serviceImage"`
 	DeployNamespace string `json:"deployNamespace"`
 	ArtifactInfo    string `json:"artifactInfo"`
+	StorageCapacity string `json:"storageCapacity"`
 	DeployType      string `json:"DeployType"`
 	CPULimit        string `json:"cpuLimit"`
 	MEMLimit        string `json:"memLimit"`
