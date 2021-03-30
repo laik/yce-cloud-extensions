@@ -63,6 +63,8 @@ spec:
                             type: string
                           mountPath:
                             type: string
+                          kind:
+                            type: string
                           cmItems:
                             type: array
                             items:
@@ -77,6 +79,8 @@ spec:
                 deployType:
                   type: string
                 cpuLimit:
+                  type: string
+                storageCapacity:
                   type: string
                 policy:
                   type: string

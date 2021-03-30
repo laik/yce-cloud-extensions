@@ -192,6 +192,7 @@ func (s *CDController) Run(addr string) error {
 				ArtifactInfo:    artifactInfo,
 				DeployType:      &request.DeployType,
 				Policy:          &request.Policy,
+				StorageCapacity: &request.StorageCapacity,
 				CPULimit:        &request.CPULimit,
 				MEMLimit:        &request.MEMLimit,
 				CPURequests:     &request.CPURequests,
