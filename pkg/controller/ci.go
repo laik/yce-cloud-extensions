@@ -129,6 +129,7 @@ func (s *CIController) recv(stop <-chan struct{}, errC chan<- error) {
 				continue
 			}
 
+
 			s.lastVersion = ci.GetResourceVersion()
 		}
 	}
