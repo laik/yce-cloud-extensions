@@ -173,6 +173,10 @@ func (s *CDController) Run(addr string) error {
 			mountName := configVolumes.MountName
 			mountName = reCheckName(mountName)
 			artifactInfo.ConfigVolumes[i].MountName = mountName
+			if configVolumes.CMItems == nil {
+				cMItems := make([]v1.CMItems, 0)
+				artifactInfo.ConfigVolumes[i].CMItems = cMItems
+			}
 		}
 
 		// 构造一个CD的结构
