@@ -335,8 +335,11 @@ func (c *Service) reconcileCDStorage(cd *v1.CD, storageClass string) (string, er
 			isStorage = "need"
 		}
 	}
+	if isStorage != "need" {
+		return "", nil
+	}
 	if cd.Spec.StorageCapacity == nil {
-		var storageCapacity = ""
+		var storageCapacity = "200Mi"
 		cd.Spec.StorageCapacity = &storageCapacity
 	} else {
 		if *cd.Spec.StorageCapacity != "" && storageClass == "" {
