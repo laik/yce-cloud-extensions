@@ -95,7 +95,7 @@ spec:
     - default: none
       name: project_version
       type: string
-    - default: 'yametech/kaniko:v0.24.0'
+    - default: 'registry-d.ym/devops/executor:v1.5.2'
       name: build_tool_image
       type: string
     - default: none
@@ -140,6 +140,7 @@ spec:
         - '--destination=$(params.dest_repo_url)/$(params.project_name):$(params.project_version)'
         - '--cache=true'
         - '--skip-tls-verify'
+        - '--snapshotMode=time'
         - '--cache-repo=$(params.cache_repo_url)/$(params.project_name)-cache'
         - '--skip-unused-stages=true'
       env:
