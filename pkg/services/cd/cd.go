@@ -238,14 +238,15 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	configVolumes := make([]v1.ConfigVolumes, 0)
-	volumes := make([]v1.ConfigVolumes, 0)
+	volumeNum := 1
 	if cd.Spec.ArtifactInfo.ConfigVolumes == nil {
 		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
 	} else {
 		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
 			if configVolume.Kind == "storage" {
-				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = ""
-				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = "data"
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = fmt.Sprintf("%si", configVolume.MountName)
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = fmt.Sprintf("data%d", volumeNum)
+				volumeNum += 1
 				continue
 			}
 			pathStr := strings.Split(configVolume.MountPath, "/")
@@ -255,17 +256,11 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 			} else {
 				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = pathStr[len(pathStr)-1]
 			}
-			volumes = append(volumes, configVolume)
 		}
 	}
 	if cd.Spec.Policy == nil {
 		var policy = "Always"
 		cd.Spec.Policy = &policy
-	}
-
-	IsStorage, err := c.reconcileCDStorage(cd, storageClass)
-	if err != nil {
-		return err
 	}
 
 	params := &params{
@@ -276,13 +271,10 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		CpuLimit:        *cd.Spec.CPULimit,
 		MemoryLimit:     *cd.Spec.MEMLimit,
 		Policy:          *cd.Spec.Policy,
-		IsStorage:       IsStorage,
-		StorageCapacity: *cd.Spec.StorageCapacity,
 		StorageClass:    storageClass,
 		CpuRequests:     *cd.Spec.CPURequests,
 		MemoryRequests:  *cd.Spec.MEMRequests,
 		ConfigVolumes:   cd.Spec.ArtifactInfo.ConfigVolumes,
-		Volumes:         volumes,
 		Commands:        cd.Spec.ArtifactInfo.Command,
 		Args:            cd.Spec.ArtifactInfo.Arguments,
 		Environments:    cd.Spec.ArtifactInfo.Environments,
