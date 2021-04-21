@@ -149,7 +149,7 @@ type params struct {
 	CDName         string
 	Environments   []v1.Envs
 	ConfigVolumes  []v1.ConfigVolumes
-	NeedStorage string
+	NeedStorage    string
 }
 
 type NamespaceResourceLimit struct {
