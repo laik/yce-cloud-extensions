@@ -57,14 +57,15 @@ spec:
             {{range .ConfigVolumes}}
             - name: {{.MountName}}
               mountPath: {{.MountPath}}
-              {{- if .SubPath}}
+              {{- if eq .Kind "configmap"}}
               subPath: {{.SubPath}}
               {{- end }}
             {{ end }}
           {{- end }}
-      {{- if .Volumes}}
+      {{- if .ConfigVolumes}}
       volumes:
-        {{range .Volumes}}
+        {{range .ConfigVolumes}}
+        {{- if eq .Kind "configmap"}}
         - name: {{.MountName}}
           configMap:
             name: {{$.Name}}
@@ -75,20 +76,23 @@ spec:
                 path: {{.VolumePath}}
               {{ end }}
             {{- end }}
+        {{- end }}
         {{ end }}
       {{- end }}
-  {{- if .IsStorage}}
+  {{range .ConfigVolumes}}
+  {{- if eq .Kind "storage"}}
   volumeClaimTemplates:
     - metadata:
-        name: data
+        name: {{.MountName}}
       spec:
         accessModes:
           - ReadWriteOnce
         resources:
           requests:
-            storage: {{.StorageCapacity}}
-        storageClassName: {{.StorageClass}}
+            storage: {{.SubPath}}
+        storageClassName: {{$.StorageClass}}
   {{- end }}
+  {{ end }}
   strategy: Release
   coordinates:
 {{range .Coordinates}}
@@ -125,27 +129,24 @@ data:
 )
 
 type params struct {
-	Namespace       string
-	Name            string
-	Image           string
-	CpuLimit        string
-	MemoryLimit     string
-	CpuRequests     string
-	MemoryRequests  string
-	Policy          string
-	IsStorage       string
-	StorageCapacity string
-	StorageClass    string
-	Commands        []string
-	Args            []string
-	ServicePorts    []v1.ServicePorts
-	ServiceType     string
-	UUID            string
-	Coordinates     []ResourceLimitStruct
-	CDName          string
-	Environments    []v1.Envs
-	ConfigVolumes   []v1.ConfigVolumes
-	Volumes         []v1.ConfigVolumes
+	Namespace      string
+	Name           string
+	Image          string
+	CpuLimit       string
+	MemoryLimit    string
+	CpuRequests    string
+	MemoryRequests string
+	Policy         string
+	StorageClass   string
+	Commands       []string
+	Args           []string
+	ServicePorts   []v1.ServicePorts
+	ServiceType    string
+	UUID           string
+	Coordinates    []ResourceLimitStruct
+	CDName         string
+	Environments   []v1.Envs
+	ConfigVolumes  []v1.ConfigVolumes
 }
 
 type NamespaceResourceLimit struct {
