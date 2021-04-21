@@ -79,9 +79,11 @@ spec:
         {{- end }}
         {{ end }}
       {{- end }}
+  {{- if eq .NeedStorage "true"}}
+  volumeClaimTemplates:
+  {{- end }}
   {{range .ConfigVolumes}}
   {{- if eq .Kind "storage"}}
-  volumeClaimTemplates:
     - metadata:
         name: {{.MountName}}
       spec:
@@ -147,6 +149,7 @@ type params struct {
 	CDName         string
 	Environments   []v1.Envs
 	ConfigVolumes  []v1.ConfigVolumes
+	NeedStorage string
 }
 
 type NamespaceResourceLimit struct {

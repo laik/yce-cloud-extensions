@@ -239,11 +239,13 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 
 	configVolumes := make([]v1.ConfigVolumes, 0)
 	volumeNum := 1
+	needStorage := "false"
 	if cd.Spec.ArtifactInfo.ConfigVolumes == nil {
 		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
 	} else {
 		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
 			if configVolume.Kind == "storage" {
+				needStorage = "true"
 				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = fmt.Sprintf("%si", configVolume.MountName)
 				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = fmt.Sprintf("data%d", volumeNum)
 				volumeNum += 1
@@ -264,24 +266,25 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	params := &params{
-		CDName:          cd.GetName(),
-		Namespace:       *cd.Spec.DeployNamespace,
-		Name:            *cd.Spec.ServiceName,
-		Image:           *cd.Spec.ServiceImage,
-		CpuLimit:        *cd.Spec.CPULimit,
-		MemoryLimit:     *cd.Spec.MEMLimit,
-		Policy:          *cd.Spec.Policy,
-		StorageClass:    storageClass,
-		CpuRequests:     *cd.Spec.CPURequests,
-		MemoryRequests:  *cd.Spec.MEMRequests,
-		ConfigVolumes:   cd.Spec.ArtifactInfo.ConfigVolumes,
-		Commands:        cd.Spec.ArtifactInfo.Command,
-		Args:            cd.Spec.ArtifactInfo.Arguments,
-		Environments:    cd.Spec.ArtifactInfo.Environments,
-		ServicePorts:    cd.Spec.ArtifactInfo.ServicePorts,
-		ServiceType:     "ClusterIP",
-		Coordinates:     createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
-		UUID:            fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
+		CDName:         cd.GetName(),
+		Namespace:      *cd.Spec.DeployNamespace,
+		Name:           *cd.Spec.ServiceName,
+		Image:          *cd.Spec.ServiceImage,
+		CpuLimit:       *cd.Spec.CPULimit,
+		MemoryLimit:    *cd.Spec.MEMLimit,
+		Policy:         *cd.Spec.Policy,
+		StorageClass:   storageClass,
+		NeedStorage:    needStorage,
+		CpuRequests:    *cd.Spec.CPURequests,
+		MemoryRequests: *cd.Spec.MEMRequests,
+		ConfigVolumes:  cd.Spec.ArtifactInfo.ConfigVolumes,
+		Commands:       cd.Spec.ArtifactInfo.Command,
+		Args:           cd.Spec.ArtifactInfo.Arguments,
+		Environments:   cd.Spec.ArtifactInfo.Environments,
+		ServicePorts:   cd.Spec.ArtifactInfo.ServicePorts,
+		ServiceType:    "ClusterIP",
+		Coordinates:    createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
+		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
 	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {

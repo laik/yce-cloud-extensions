@@ -24,6 +24,7 @@ func TestStoneConstructor(t *testing.T) {
 			MemoryLimit:    "30m",
 			CpuRequests:    "1000m",
 			MemoryRequests: "300m",
+			NeedStorage: "true",
 			ConfigVolumes: []v1.ConfigVolumes{
 				{MountName: "volume-test",
 					MountPath: "/var/www/",
