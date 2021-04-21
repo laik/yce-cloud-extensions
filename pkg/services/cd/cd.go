@@ -246,7 +246,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
 			if configVolume.Kind == "storage" {
 				needStorage = "true"
-				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = fmt.Sprintf("%si", configVolume.MountName)
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = fmt.Sprintf("%si", strings.ToUpper(configVolume.MountName))
 				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = fmt.Sprintf("data%d", volumeNum)
 				volumeNum += 1
 				continue
