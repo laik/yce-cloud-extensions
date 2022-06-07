@@ -4,9 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"text/template"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
-	"text/template"
 )
 
 const (
@@ -34,6 +35,7 @@ const (
 
 var (
 	BuildToolImage = "yametech/kaniko:v0.24.0"
+	CheckDockerFile = "yametech/checkdocker:v0.1.3"
 	DestRepoUrl    = "harbor.ym/yce-cloud-extensions"
 	CacheRepoUrl   = "harbor.ym/yce-cloud-extensions-repo-cache"
 
@@ -57,6 +59,7 @@ func init() {
 	flag.StringVar(&ConfigRegistryPassword, "registry-password", ConfigRegistryPassword, "-registry-password password")
 
 	flag.StringVar(&BuildToolImage, "build-tool-image", BuildToolImage, "-build-tool-image yametech/kaniko:v0.24.0")
+	flag.StringVar(&CheckDockerFile, "check-docker-file", CheckDockerFile, "-check-docker-file yametech/checkdocker:v0.1.3")
 	flag.StringVar(&DestRepoUrl, "dest-repo", DestRepoUrl, "-dest-repo harbor.ym/yce-cloud-extensions")
 	flag.StringVar(&CacheRepoUrl, "cache-repo", CacheRepoUrl, "-cache-repo harbor.ym/yce-cloud-extensions-repo-cache")
 }

@@ -414,6 +414,7 @@ func (c *Service) checkAndRecreateJavaPipelineRun(
 		ProjectName:          projectName,
 		ProjectVersion:       projectVersion,
 		BuildToolImage:       services.BuildToolImage,
+		CheckDockerFile:      services.CheckDockerFile,
 		DestRepoUrl:          _outputUrl,
 		CodeType:             codeType,
 		ProjectPath:          projectPath,
