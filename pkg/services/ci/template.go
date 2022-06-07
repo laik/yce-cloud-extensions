@@ -267,7 +267,7 @@ spec:
     - default: 'yametech/kaniko:v1.3.0'
       name: build_tool_image
       type: string
-    - default: yametech/checkdocker:v0.1.3'
+    - default: 'yametech/checkdocker:v0.1.3'
       name: check_docker_file
       type: string
     - default: none
