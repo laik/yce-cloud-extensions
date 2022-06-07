@@ -36,6 +36,9 @@ spec:
       name: build_tool_image
       type: string
     - default: ''
+      name: check_docker_file
+      type: string
+    - default: ''
       name: dest_repo_url
       type: string
     - default: ''
@@ -72,6 +75,8 @@ spec:
           value: $(params.sub_dir)
         - name: dockerfile
           value: $(params.dockerfile)
+        - name: check_docker_file
+          value: $(params.check_docker_file)
       resources:
         inputs:
           - name: git
@@ -97,6 +102,9 @@ spec:
       type: string
     - default: 'registry-d.ym/devops/executor:v1.5.2'
       name: build_tool_image
+      type: string
+    - default: 'yametech/checkdocker:v0.1.3'
+      name: check_docker_file
       type: string
     - default: none
       name: dest_repo_url
@@ -129,7 +137,7 @@ spec:
       env:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
-      image: 'yametech/checkdocker:v0.1.3'
+      image: $(params.check_docker_file)
       name: step1
       resources: {}
     - args:
@@ -191,6 +199,8 @@ spec:
       value: {{.ProjectVersion}}
     - name: build_tool_image
       value: {{.BuildToolImage}}
+    - name: check_docker_file
+      value: {{.CheckDockerFile}}
     - name: code_type
       value: {{.CodeType}}
     - name: dest_repo_url
@@ -258,6 +268,9 @@ spec:
     - default: 'yametech/kaniko:v1.3.0'
       name: build_tool_image
       type: string
+    - default: yametech/checkdocker:v0.1.3'
+      name: check_docker_file
+      type: string
     - default: none
       name: dest_repo_url
       type: string
@@ -286,7 +299,7 @@ spec:
       env:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
-      image: 'yametech/checkdocker:v0.1.3'
+      image: $(params.check_docker_file)
       name: step1
       resources: {}
     - args:
@@ -404,6 +417,8 @@ spec:
       value: {{.ProjectVersion}}
     - name: build_tool_image
       value: {{.BuildToolImage}}
+    - name: check_docker_file
+      value: {{.CheckDockerFile}}
     - name: code_type
       value: {{.CodeType}}
     - name: dest_repo_url
@@ -443,6 +458,7 @@ type params struct {
 	CodeType             string
 	ProjectVersion       string
 	BuildToolImage       string
+  CheckDockerFile string
 	DestRepoUrl          string
 	CacheRepoUrl         string
 	TaskName             string
