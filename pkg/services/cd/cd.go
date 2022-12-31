@@ -293,7 +293,6 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {
-
 		configMap := make(map[string]interface{})
 		dict.Set(configMap, "apiVersion", "v1")
 		dict.Set(configMap, "metadata.name", *cd.Spec.ServiceName)
@@ -309,6 +308,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		}
 		dict.Set(configMap, "data", dataValue)
 		unstructuredConfigMap := &unstructured.Unstructured{Object: configMap}
+
 		_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.ConfigMap, *cd.Spec.ServiceName, unstructuredConfigMap, true)
 		if err != nil {
 			return fmt.Errorf("%s configMap apply error (%s)\n", common.ERROR, err)
@@ -322,7 +322,7 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 
 	_, _, err = c.Apply(*cd.Spec.DeployNamespace, k8s.Stone, *cd.Spec.ServiceName, unstructuredStone, true)
 	if err != nil {
-		return fmt.Errorf("%s stone apply error (%s)\n", common.ERROR, err)
+		return fmt.Errorf("%s stone apply namespace (%s) stone (%s) \r\n error (%s)\r\n", common.ERROR, *cd.Spec.DeployNamespace, *cd.Spec.ServiceName, err)
 	}
 
 	return nil

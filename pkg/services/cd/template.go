@@ -41,16 +41,16 @@ spec:
           env:
           {{range .Environments}}
             - name: {{.Name}}
-              value: {{.Envvalue}}
+              value: "{{.Envvalue}}"
           {{ end }}
           {{- end }}
           resources:
             limits:
-              cpu: {{.CpuLimit}}
-              memory: {{.MemoryLimit}}
+              cpu: "{{.CpuLimit}}"
+              memory: "{{.MemoryLimit}}"
             requests:
-              cpu: {{.CpuRequests}}
-              memory: {{.MemoryRequests}}
+              cpu: "{{.CpuRequests}}"
+              memory: "{{.MemoryRequests}}"
           imagePullPolicy: {{.Policy}}
           {{- if .ConfigVolumes}}
           volumeMounts:

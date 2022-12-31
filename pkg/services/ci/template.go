@@ -138,7 +138,7 @@ spec:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
       image: $(params.check_docker_file)
-      name: step1
+      name: checkdocker
       resources: {}
     - args:
         - '--dockerfile=/workspace/git/$(params.dockerfile)'
@@ -154,7 +154,7 @@ spec:
         - name: "DOCKER_CONFIG"
           value: "/tekton/home/.docker"
       image: $(params.build_tool_image)
-      name: step2
+      name: building
       resources: {}
       command: []
       script: ''
@@ -299,7 +299,7 @@ spec:
         - name: DOCKER_CONFIG
           value: /tekton/home/.docker
       image: $(params.check_docker_file)
-      name: step1
+      name: checkdocker
       resources: {}
     - args:
         - '--dockerfile=/workspace/git/$(params.dockerfile)'
@@ -313,7 +313,7 @@ spec:
         - name: "DOCKER_CONFIG"
           value: "/tekton/home/.docker"
       image: $(params.build_tool_image)
-      name: step2
+      name: building
       resources: {}
       command: []
       script: ''
@@ -357,6 +357,9 @@ spec:
       name: build_tool_image
       type: string
     - default: ''
+      name: check_docker_file
+      type: string
+    - default: ''
       name: dest_repo_url
       type: string
     - default: ''
@@ -380,6 +383,8 @@ spec:
           value: $(params.project_version)
         - name: build_tool_image
           value: $(params.build_tool_image)
+        - name: check_docker_file
+          value: $(params.check_docker_file)
         - name: dest_repo_url
           value: $(params.dest_repo_url)
         - name: code_type
@@ -457,7 +462,7 @@ type params struct {
 	CodeType             string
 	ProjectVersion       string
 	BuildToolImage       string
-  CheckDockerFile string
+	CheckDockerFile      string
 	DestRepoUrl          string
 	CacheRepoUrl         string
 	TaskName             string
