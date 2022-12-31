@@ -238,14 +238,17 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 	}
 
 	configVolumes := make([]v1.ConfigVolumes, 0)
-	volumes := make([]v1.ConfigVolumes, 0)
+	volumeNum := 1
+	needStorage := "false"
 	if cd.Spec.ArtifactInfo.ConfigVolumes == nil {
 		cd.Spec.ArtifactInfo.ConfigVolumes = configVolumes
 	} else {
 		for idx, configVolume := range cd.Spec.ArtifactInfo.ConfigVolumes {
 			if configVolume.Kind == "storage" {
-				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = ""
-				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = "data"
+				needStorage = "true"
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = fmt.Sprintf("%si", strings.ToUpper(configVolume.MountName))
+				cd.Spec.ArtifactInfo.ConfigVolumes[idx].MountName = fmt.Sprintf("data%d", volumeNum)
+				volumeNum += 1
 				continue
 			}
 			pathStr := strings.Split(configVolume.MountPath, "/")
@@ -255,7 +258,6 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 			} else {
 				cd.Spec.ArtifactInfo.ConfigVolumes[idx].SubPath = pathStr[len(pathStr)-1]
 			}
-			volumes = append(volumes, configVolume)
 		}
 	}
 	if cd.Spec.Policy == nil {
@@ -263,33 +265,26 @@ func (c *Service) reconcileCD(cd *v1.CD) error {
 		cd.Spec.Policy = &policy
 	}
 
-	IsStorage, err := c.reconcileCDStorage(cd, storageClass)
-	if err != nil {
-		return err
-	}
-
 	params := &params{
-		CDName:          cd.GetName(),
-		Namespace:       *cd.Spec.DeployNamespace,
-		Name:            *cd.Spec.ServiceName,
-		Image:           *cd.Spec.ServiceImage,
-		CpuLimit:        *cd.Spec.CPULimit,
-		MemoryLimit:     *cd.Spec.MEMLimit,
-		Policy:          *cd.Spec.Policy,
-		IsStorage:       IsStorage,
-		StorageCapacity: *cd.Spec.StorageCapacity,
-		StorageClass:    storageClass,
-		CpuRequests:     *cd.Spec.CPURequests,
-		MemoryRequests:  *cd.Spec.MEMRequests,
-		ConfigVolumes:   cd.Spec.ArtifactInfo.ConfigVolumes,
-		Volumes:         volumes,
-		Commands:        cd.Spec.ArtifactInfo.Command,
-		Args:            cd.Spec.ArtifactInfo.Arguments,
-		Environments:    cd.Spec.ArtifactInfo.Environments,
-		ServicePorts:    cd.Spec.ArtifactInfo.ServicePorts,
-		ServiceType:     "ClusterIP",
-		Coordinates:     createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
-		UUID:            fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
+		CDName:         cd.GetName(),
+		Namespace:      *cd.Spec.DeployNamespace,
+		Name:           *cd.Spec.ServiceName,
+		Image:          *cd.Spec.ServiceImage,
+		CpuLimit:       *cd.Spec.CPULimit,
+		MemoryLimit:    *cd.Spec.MEMLimit,
+		Policy:         *cd.Spec.Policy,
+		StorageClass:   storageClass,
+		NeedStorage:    needStorage,
+		CpuRequests:    *cd.Spec.CPURequests,
+		MemoryRequests: *cd.Spec.MEMRequests,
+		ConfigVolumes:  cd.Spec.ArtifactInfo.ConfigVolumes,
+		Commands:       cd.Spec.ArtifactInfo.Command,
+		Args:           cd.Spec.ArtifactInfo.Arguments,
+		Environments:   cd.Spec.ArtifactInfo.Environments,
+		ServicePorts:   cd.Spec.ArtifactInfo.ServicePorts,
+		ServiceType:    "ClusterIP",
+		Coordinates:    createResourceLimitStructs(namespaceResourceLimitSlice.GroupBy(), cd.Spec.Replicas),
+		UUID:           fmt.Sprintf("%s-%s", *cd.Spec.DeployNamespace, *cd.Spec.ServiceName),
 	}
 
 	if len(cd.Spec.ArtifactInfo.ConfigVolumes) != 0 {
@@ -335,8 +330,11 @@ func (c *Service) reconcileCDStorage(cd *v1.CD, storageClass string) (string, er
 			isStorage = "need"
 		}
 	}
+	if isStorage != "need" {
+		return "", nil
+	}
 	if cd.Spec.StorageCapacity == nil {
-		var storageCapacity = ""
+		var storageCapacity = "200Mi"
 		cd.Spec.StorageCapacity = &storageCapacity
 	} else {
 		if *cd.Spec.StorageCapacity != "" && storageClass == "" {
